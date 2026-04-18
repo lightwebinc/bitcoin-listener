@@ -1,0 +1,71 @@
+---
+- name: Enable IPv6 in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^ipv6_enable=', line: 'ipv6_enable="YES"' }
+
+- name: Configure dual-stack ingress interface in rc.conf (ethernet, FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - regexp: "^ifconfig_{{ networking_ingress_iface }}="
+      line: >-
+        ifconfig_{{ networking_ingress_iface }}="DHCP"
+    - regexp: "^ifconfig_{{ networking_ingress_iface }}_ipv6="
+      line: >-
+        ifconfig_{{ networking_ingress_iface }}_ipv6="inet6 accept_rtadv"
+  when: ingress_mode == 'ethernet'
+
+- name: Configure IPv6 GRE (gif) tunnel in rc.conf (FreeBSD)
+  ansible.builtin.blockinfile:
+    path: /etc/rc.conf
+    marker: "# {mark} bitcoin-listener GRE tunnel"
+    block: |
+      cloned_interfaces="gif0"
+      ifconfig_gif0="tunnel {{ gre_local_ip6 }} {{ gre_remote_ip6 }}"
+      ifconfig_gif0_ipv6="inet6 {{ gre_inner_ipv6 }}"
+  when: ingress_mode == 'gre'
+
+- name: Configure IPv4 BGP loopback VIP in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^ifconfig_lo0_alias0='
+    line: 'ifconfig_lo0_alias0="inet {{ bgp_vip }} netmask 255.255.255.255"'
+  when: enable_bgp | bool and bgp_vip | length > 0
+
+- name: Configure IPv6 BGP loopback VIP in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^ifconfig_lo0_alias1='
+    line: 'ifconfig_lo0_alias1="inet6 {{ bgp_vip6 }} prefixlen 128"'
+  when: enable_bgp | bool and bgp_vip6 | length > 0
+
+- name: Add persistent multicast route for ingress interface in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^ipv6_route_bsl_mcast='
+    line: 'ipv6_route_bsl_mcast="{{ networking_mc_route_prefix }} -interface {{ networking_ingress_iface }}"'
+
+- name: Apply multicast route immediately (FreeBSD)
+  ansible.builtin.command:
+    argv:
+      - route
+      - add
+      - -inet6
+      - -net
+      - "{{ networking_mc_route_prefix }}"
+      - -interface
+      - "{{ networking_ingress_iface }}"
+  register: networking_mc_route_result
+  changed_when: networking_mc_route_result.rc == 0
+  failed_when: networking_mc_route_result.rc != 0 and 'File exists' not in networking_mc_route_result.stderr
+
+- name: Restart networking (FreeBSD)
+  ansible.builtin.service:
+    name: netif
+    state: restarted

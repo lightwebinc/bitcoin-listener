@@ -1,0 +1,136 @@
+name: Lint
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yamllint:
+    name: yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run yamllint
+        run: yamllint ansible/
+
+  ansible-lint:
+    name: ansible-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint>=25.0
+
+      - name: Install Ansible collections
+        run: |
+          ansible-galaxy collection install 'community.general>=10.0' 'ansible.posix>=2.0'
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/
+
+  nftables-syntax:
+    name: nftables syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install nftables + ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nftables ansible
+          ansible-galaxy collection install community.general ansible.posix
+
+      - name: Render template with fixture vars
+        run: |
+          mkdir -p /tmp/nft-check
+          cat > /tmp/nft-check/vars.yml <<'EOF'
+          firewall_fabric_iface: eth0
+          firewall_retry_endpoint_hosts: ["10.0.2.10", "10.0.2.11"]
+          firewall_egress_host: "10.0.1.100"
+          firewall_egress_port: "9100"
+          firewall_metrics_port: "9200"
+          listen_port: 9001
+          egress_proto: udp
+          enable_bgp: true
+          mgmt_cidrs_v4: ["10.0.0.0/8"]
+          mgmt_cidrs_v6: []
+          EOF
+          cat > /tmp/nft-check/render.yml <<'EOF'
+          - hosts: localhost
+            gather_facts: false
+            vars_files:
+              - /tmp/nft-check/vars.yml
+            tasks:
+              - template:
+                  src: ansible/roles/firewall/templates/bitcoin-listener.nft.j2
+                  dest: /tmp/nft-check/rendered.nft
+          EOF
+          ansible-playbook /tmp/nft-check/render.yml
+
+      - name: Validate rendered ruleset
+        run: sudo nft -c -f /tmp/nft-check/rendered.nft
+
+  trivy:
+    name: trivy config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: trivy config scan
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          scan-type: config
+          scan-ref: terraform/
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          trivyignores: terraform/examples/aws-ec2/.trivyignore
+
+  terraform-validate:
+    name: terraform validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir:
+          - terraform/modules/listener-node
+          - terraform/modules/bgp-anycast
+          - terraform/examples/generic
+          - terraform/examples/aws-ec2
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.9"
+
+      - name: terraform init
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.dir }}
+
+      - name: terraform validate
+        run: terraform validate
+        working-directory: ${{ matrix.dir }}
+
+      - name: terraform fmt check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.dir }}

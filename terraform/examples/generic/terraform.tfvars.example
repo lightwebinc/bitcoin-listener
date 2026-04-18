@@ -1,0 +1,50 @@
+# Copy this file to terraform.tfvars and fill in your values.
+
+hosts = [
+  {
+    name        = "listener-01"
+    public_ip   = "203.0.113.50"
+    ssh_user    = "ubuntu"
+    ssh_key     = "~/.ssh/id_ed25519"
+    egress_addr = "10.0.1.100:9100"
+    # gre_local_ip6  = "2001:db8:a::10"   # local IPv6 endpoint for ip6gre
+    # gre_inner_ipv6 = "fd00::10/64"       # inner address on tunnel interface
+    # bgp_peer_ip    = "198.51.100.1"     # per-host IPv4 BGP peer override
+    # bgp_peer_ip6   = "2001:db8:b::1"   # per-host IPv6 BGP peer override
+  },
+  {
+    name        = "listener-02"
+    public_ip   = "198.51.100.60"
+    ssh_user    = "freebsd"
+    ssh_key     = "~/.ssh/id_ed25519"
+    egress_addr = "10.0.1.101:9100"
+  },
+]
+
+shard_bits      = 2
+ingress_mode    = "ethernet"
+ingress_iface   = "eth0"
+egress_proto    = "udp"
+retry_endpoints = "10.0.2.10:9300,10.0.2.11:9300"
+
+# Multicast-fabric perimeter firewall (default on)
+enable_firewall = true
+mgmt_cidrs_v4   = ["10.0.0.0/8"]
+mgmt_cidrs_v6   = []
+
+# GRE6 tunnel (set ingress_mode = "gre" to use)
+# gre_remote_ip6 = "2001:db8:feed::1"
+
+# BGP (set enable_bgp = true to use)
+# Listener BGP advertises the listener's own prefix INTO the fabric only.
+# Downstream-consumer anycast is NOT supported; demarcation is at the fabric edge.
+enable_bgp   = false
+bgp_daemon   = "bird2"
+bgp_prefix   = []        # e.g. ["203.0.113.50/32"]
+bgp_vip      = ""        # e.g. "203.0.113.50"
+bgp_prefix6  = []        # e.g. ["2001:db8::50/128"]
+bgp_vip6     = ""        # e.g. "2001:db8::50"
+bgp_local_as = 65002
+bgp_peer_as  = 65000
+bgp_peer_ip  = ""
+bgp_peer_ip6 = ""

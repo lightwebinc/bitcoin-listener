@@ -1,0 +1,19 @@
+---
+- name: Restart bird
+  ansible.builtin.service:
+    name: bird
+    state: restarted
+
+- name: Restart frr
+  ansible.builtin.service:
+    name: frr
+    state: restarted
+  listen: Restart frr
+
+- name: Enable and start bsl-bgp-check timer
+  ansible.builtin.systemd:
+    name: bsl-bgp-check.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: ansible_os_family != 'FreeBSD'

@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# PROVIDE: bitcoin_shard_listener
+# REQUIRE: NETWORKING DAEMON
+# KEYWORD: shutdown
+#
+# Managed by Ansible — do not edit manually
+#
+# Add the following to /etc/rc.conf to enable:
+#   bitcoin_shard_listener_enable="YES"
+
+. /etc/rc.subr
+
+name="bitcoin_shard_listener"
+rcvar="bitcoin_shard_listener_enable"
+desc="Bitcoin Shard Listener"
+
+load_rc_config "${name}"
+
+: ${bitcoin_shard_listener_enable:="NO"}
+: ${bitcoin_shard_listener_user:="{{ listener_user }}"}
+: ${bitcoin_shard_listener_group:="{{ listener_group }}"}
+: ${bitcoin_shard_listener_config:="/usr/local/etc/bitcoin-shard-listener.conf"}
+: ${bitcoin_shard_listener_logfile:="/var/log/bitcoin_shard_listener.log"}
+: ${bitcoin_shard_listener_pidfile:="/var/run/bitcoin_shard_listener.pid"}
+
+pidfile="${bitcoin_shard_listener_pidfile}"
+command="{{ listener_bin_dir }}/bitcoin-shard-listener"
+command_args=""
+
+start_precmd="bitcoin_shard_listener_prestart"
+start_cmd="bitcoin_shard_listener_start"
+stop_cmd="bitcoin_shard_listener_stop"
+status_cmd="bitcoin_shard_listener_status"
+
+bitcoin_shard_listener_prestart()
+{
+    # Load environment from config file
+    if [ -f "${bitcoin_shard_listener_config}" ]; then
+        . "${bitcoin_shard_listener_config}"
+    fi
+    export MULTICAST_IF LISTEN_PORT SHARD_BITS MC_SCOPE MC_BASE_ADDR
+    export SHARD_INCLUDE SUBTREE_INCLUDE SUBTREE_EXCLUDE
+    export EGRESS_ADDR EGRESS_PROTO STRIP_HEADER
+    export RETRY_ENDPOINTS NACK_JITTER_MAX NACK_BACKOFF_MAX NACK_MAX_RETRIES NACK_GAP_TTL
+    export NUM_WORKERS METRICS_ADDR OTLP_ENDPOINT OTLP_INTERVAL
+    export DRAIN_TIMEOUT INSTANCE_ID DEBUG
+
+    # Receive-side: no multicast route needed (MLD group joins handle reception).
+}
+
+bitcoin_shard_listener_start()
+{
+    bitcoin_shard_listener_prestart
+    /usr/sbin/daemon -f -p "${pidfile}" -u "${bitcoin_shard_listener_user}" \
+        ${command} >> "${bitcoin_shard_listener_logfile}" 2>&1
+    echo "bitcoin_shard_listener started."
+}
+
+bitcoin_shard_listener_stop()
+{
+    if [ -f "${pidfile}" ]; then
+        kill -TERM $(cat "${pidfile}") && rm -f "${pidfile}"
+        echo "bitcoin_shard_listener stopped."
+    else
+        echo "bitcoin_shard_listener is not running."
+    fi
+}
+
+bitcoin_shard_listener_status()
+{
+    if [ -f "${pidfile}" ] && kill -0 $(cat "${pidfile}") 2>/dev/null; then
+        echo "bitcoin_shard_listener is running (pid $(cat ${pidfile}))."
+    else
+        echo "bitcoin_shard_listener is not running."
+        return 1
+    fi
+}
+
+run_rc_command "$1"

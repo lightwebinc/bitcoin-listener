@@ -1,0 +1,109 @@
+---
+# ============================================================
+# bitcoin-listener Ansible group_vars/all.yml
+# Override any variable per-host in inventory/hosts.yml
+# ============================================================
+
+# ------------------------------------------------------------
+# bitcoin-shard-listener source and build
+# ------------------------------------------------------------
+listener_repo: "https://github.com/lightwebinc/bitcoin-shard-listener.git"
+listener_version: "main"
+listener_install_dir: "/opt/bitcoin-shard-listener"
+listener_bin_dir: "/usr/local/bin"
+listener_user: "bitcoin-listener"
+listener_group: "bitcoin-listener"
+
+# Go toolchain version (used when building from source)
+go_version: "1.24.5"
+go_install_dir: "/usr/local/go"
+
+# ------------------------------------------------------------
+# Listener runtime configuration
+# All flags have env-var equivalents set in the service unit
+# ------------------------------------------------------------
+listen_port: 9001               # UDP port for multicast receive (matches proxy egress_port)
+shard_bits: 2
+mc_scope: "site"                # link | site | org | global
+mc_base_addr: ""                # Optional assigned prefix base
+
+# Filtering (empty strings = no filtering)
+shard_include: ""               # Comma-separated shard indices/ranges, e.g. "0,1,4-7"
+subtree_include: ""             # Comma-separated hex subtree IDs to allow (V2 only)
+subtree_exclude: ""             # Comma-separated hex subtree IDs to drop (V2 only)
+
+# Egress (downstream unicast forward)
+egress_addr: "127.0.0.1:9100"   # host:port of downstream consumer
+egress_proto: "udp"             # udp | tcp
+strip_header: false             # Send payload-only datagrams to egress
+
+# NACK (NORM-inspired gap recovery)
+retry_endpoints: ""             # Comma-separated host:port retry nodes
+nack_jitter_max: "200ms"
+nack_backoff_max: "5s"
+nack_max_retries: 5
+nack_gap_ttl: "10m"
+
+# Runtime / observability
+num_workers: 0                  # 0 = runtime.NumCPU()
+metrics_addr: ":9200"           # Listener metrics (not :9100 — avoids collision with proxy)
+otlp_endpoint: ""               # OTLP gRPC push; empty disables
+otlp_interval: "30s"            # OTLP metric export cadence
+drain_timeout: "0s"             # Pre-shutdown drain; set ≥ LB check interval in prod
+instance_id: ""                 # OTel service.instance.id; empty = hostname
+listener_debug: false
+
+# ------------------------------------------------------------
+# Firewall perimeter (multicast-fabric isolation)
+# Default ON; set false for labs where broader connectivity is desired.
+# ------------------------------------------------------------
+enable_firewall: true
+mgmt_cidrs_v4: []               # SSH / metrics scrape allow-list (IPv4). MUST be set per deployment.
+mgmt_cidrs_v6: []               # SSH / metrics scrape allow-list (IPv6).
+
+# ------------------------------------------------------------
+# Networking (ingress / multicast-receive side)
+# ------------------------------------------------------------
+ingress_mode: "ethernet"        # ethernet | gre
+ingress_iface: "eth0"           # NIC for multicast group joins. MUST be set per-host
+                                # (group_vars/all precedence defeats inventory-group vars).
+
+# Multicast route prefix for the ingress interface.
+# Empty = auto-derive from mc_scope (link=ff02::/16, site=ff05::/16, etc.)
+mc_route_prefix: ""
+
+# GRE6 tunnel (only used when ingress_mode == gre)
+# IPv6-only fabric: local/remote are IPv6, tunnel is ip6gre (Linux) / gif (FreeBSD).
+# When ingress_mode=gre, set ingress_iface to gre_iface on each host.
+gre_local_ip6: ""               # Local tunnel endpoint (listener side)
+gre_remote_ip6: ""              # Remote tunnel endpoint (fabric router)
+gre_iface: "gre6-bsl"           # Tunnel interface name
+gre_inner_ipv6: ""              # IPv6 address/prefix inside the tunnel
+
+# ------------------------------------------------------------
+# BGP (optional)
+# Sole purpose on listener: advertise listener's own unicast prefix into the
+# fabric so MLD/PIM can build multicast trees toward it. NACK is send-only,
+# so no reverse-path advertisement is required. Downstream-consumer anycast
+# is NOT supported here — that demarcation lives at the fabric edge.
+# ------------------------------------------------------------
+enable_bgp: false
+bgp_daemon: "bird2"             # bird2 | frr
+
+bgp_prefix: []                  # IPv4 prefixes announced by this node
+bgp_vip: ""                     # IPv4 loopback VIP (listener identity, not shared anycast)
+bgp_prefix6: []                 # IPv6 prefixes announced by this node
+bgp_vip6: ""                    # IPv6 loopback VIP
+
+bgp_local_as: 65002             # Listener default AS (ingress uses 65001)
+bgp_peer_as: 65000
+bgp_peer_ip: ""
+bgp_peer_ip6: ""
+bgp_router_id: "{{ ansible_default_ipv4.address }}"
+bgp_hold_time: 90
+bgp_keepalive: 30
+bgp_password: ""
+
+# iBGP peers (used by bgp-ibgp role, playbook: bgp-ibgp.yml)
+# Each entry: { peer_ip: "", peer_ip6: "", description: "" }
+bgp_ibgp_peers: []

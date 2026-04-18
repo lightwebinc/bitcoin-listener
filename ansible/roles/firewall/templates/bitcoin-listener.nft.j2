@@ -1,0 +1,142 @@
+# nftables ruleset for bitcoin-listener
+# Managed by Ansible — do not edit manually
+#
+# Perimeter model:
+#   * Fabric interface ({{ firewall_fabric_iface }}): multicast-in + NACK-out only
+#   * Non-fabric interfaces: management + downstream egress to {{ firewall_egress_host }}
+#   * Forwarding: disabled
+
+table inet bitcoin-listener {
+
+    # ------------------------------------------------------------
+    # Named sets
+    # ------------------------------------------------------------
+{% set retry_v4_hosts = firewall_retry_endpoint_hosts | select('match', '^[0-9.]+$') | list %}
+{% set retry_v6_hosts = firewall_retry_endpoint_hosts | reject('match', '^[0-9.]+$') | list %}
+
+    set retry_ep_v4 {
+        type ipv4_addr
+{% if retry_v4_hosts | length > 0 %}
+        elements = { {{ retry_v4_hosts | join(', ') }} }
+{% endif %}
+    }
+
+    set retry_ep_v6 {
+        type ipv6_addr
+{% if retry_v6_hosts | length > 0 %}
+        elements = { {{ retry_v6_hosts | join(', ') }} }
+{% endif %}
+    }
+
+    set mgmt_allow_v4 {
+        type ipv4_addr
+        flags interval
+{% if mgmt_cidrs_v4 | length > 0 %}
+        elements = { {{ mgmt_cidrs_v4 | join(', ') }} }
+{% endif %}
+    }
+
+    set mgmt_allow_v6 {
+        type ipv6_addr
+        flags interval
+{% if mgmt_cidrs_v6 | length > 0 %}
+        elements = { {{ mgmt_cidrs_v6 | join(', ') }} }
+{% endif %}
+    }
+
+    # ------------------------------------------------------------
+    # Input chain
+    # ------------------------------------------------------------
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        ct state established,related accept
+        ct state invalid drop
+        iifname "lo" accept
+
+        # ICMPv6 — NDP + MLD + diagnostics (required for multicast + link health)
+        icmpv6 type {
+            nd-neighbor-solicit, nd-neighbor-advert,
+            nd-router-solicit, nd-router-advert,
+            mld-listener-query, mld-listener-report,
+            mld-listener-done, mld2-listener-report,
+            echo-request, echo-reply,
+            packet-too-big, parameter-problem, time-exceeded
+        } accept
+
+        # ICMPv4 — minimal
+        ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable } accept
+
+        # Multicast receive — only on fabric interface, only UDP/LISTEN_PORT
+        iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ listen_port }} accept
+
+        # Management: SSH + metrics scrape, only from mgmt CIDRs, only on non-fabric
+        iifname != "{{ firewall_fabric_iface }}" ip  saddr @mgmt_allow_v4 tcp dport { 22, {{ firewall_metrics_port }} } accept
+        iifname != "{{ firewall_fabric_iface }}" ip6 saddr @mgmt_allow_v6 tcp dport { 22, {{ firewall_metrics_port }} } accept
+
+{% if enable_bgp | bool %}
+        # BGP control plane
+        tcp dport 179 accept
+        tcp sport 179 accept
+{% endif %}
+
+        counter drop
+    }
+
+    # ------------------------------------------------------------
+    # Output chain
+    # ------------------------------------------------------------
+    chain output {
+        type filter hook output priority 0; policy drop;
+
+        ct state established,related accept
+        oifname "lo" accept
+
+        icmpv6 type {
+            nd-neighbor-solicit, nd-neighbor-advert,
+            nd-router-solicit,
+            mld-listener-report, mld-listener-done, mld2-listener-report,
+            echo-request, echo-reply,
+            packet-too-big, parameter-problem, time-exceeded
+        } accept
+        ip protocol icmp accept
+
+        # NACK dispatch — only to configured retry endpoints, only on fabric iface
+{% if retry_v4_hosts | length > 0 %}
+        oifname "{{ firewall_fabric_iface }}" ip  daddr @retry_ep_v4 meta l4proto udp accept
+{% endif %}
+{% if retry_v6_hosts | length > 0 %}
+        oifname "{{ firewall_fabric_iface }}" ip6 daddr @retry_ep_v6 meta l4proto udp accept
+{% endif %}
+
+        # Downstream egress — unicast to egress_addr only, NOT on fabric iface
+{% if firewall_egress_host | regex_search('^[0-9.]+$') %}
+        oifname != "{{ firewall_fabric_iface }}" ip  daddr {{ firewall_egress_host }} {{ egress_proto }} dport {{ firewall_egress_port }} accept
+{% elif firewall_egress_host | regex_search('^[0-9a-fA-F:]+$') %}
+        oifname != "{{ firewall_fabric_iface }}" ip6 daddr {{ firewall_egress_host }} {{ egress_proto }} dport {{ firewall_egress_port }} accept
+{% else %}
+        # egress_host "{{ firewall_egress_host }}" is a hostname; restrict by port only
+        oifname != "{{ firewall_fabric_iface }}" {{ egress_proto }} dport {{ firewall_egress_port }} accept
+{% endif %}
+
+{% if enable_bgp | bool %}
+        # BGP control plane
+        tcp dport 179 accept
+        tcp sport 179 accept
+{% endif %}
+
+        # DNS / NTP / package management — non-fabric only
+        oifname != "{{ firewall_fabric_iface }}" udp dport { 53, 123 } accept
+        oifname != "{{ firewall_fabric_iface }}" tcp dport { 53, 80, 443 } accept
+
+        counter drop
+    }
+
+    # ------------------------------------------------------------
+    # Forward chain — always drop (listener does not route)
+    # ------------------------------------------------------------
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+        counter drop
+    }
+}

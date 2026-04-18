@@ -1,0 +1,35 @@
+---
+- name: Enable pf in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^pf_enable=', line: 'pf_enable="YES"' }
+    - { regexp: '^pflog_enable=', line: 'pflog_enable="YES"' }
+
+- name: Deploy bitcoin-listener pf ruleset fragment
+  ansible.builtin.template:
+    src: bitcoin-listener.pf.conf.j2
+    dest: /etc/pf.anchors/bitcoin-listener
+    owner: root
+    group: wheel
+    mode: "0644"
+  notify: Reload pf
+
+- name: Ensure /etc/pf.conf references the bitcoin-listener anchor
+  ansible.builtin.blockinfile:
+    path: /etc/pf.conf
+    create: true
+    mode: "0644"
+    marker: "# {mark} bitcoin-listener anchor"
+    block: |
+      anchor "bitcoin-listener"
+      load anchor "bitcoin-listener" from "/etc/pf.anchors/bitcoin-listener"
+  notify: Reload pf
+
+- name: Enable pf service (FreeBSD)
+  ansible.builtin.service:
+    name: pf
+    enabled: true
+    state: started

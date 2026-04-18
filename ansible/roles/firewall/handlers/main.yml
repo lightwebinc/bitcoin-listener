@@ -1,0 +1,12 @@
+---
+- name: Reload nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: reloaded
+    enabled: true
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Reload pf
+  ansible.builtin.command: pfctl -f /etc/pf.conf
+  changed_when: true
+  when: ansible_os_family == 'FreeBSD'

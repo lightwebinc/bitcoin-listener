@@ -1,0 +1,23 @@
+---
+- name: Deploy bitcoin-listener nodes
+  hosts: listener_nodes
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common
+      tags: [common]
+
+    - role: bitcoin-shard-listener
+      tags: [listener]
+
+    - role: networking
+      tags: [networking]
+
+    - role: firewall
+      tags: [firewall]
+      when: enable_firewall | bool
+
+    - role: bgp
+      tags: [bgp]
+      when: enable_bgp | bool

@@ -1,0 +1,13 @@
+# Managed by Ansible (bitcoin-listener) — do not edit manually
+# Ingress interface: dual-stack (IPv4 + IPv6) — receives multicast frames
+# from the fabric via MLD group joins.
+network:
+  version: 2
+  ethernets:
+    {{ networking_ingress_iface }}:
+      dhcp4: true
+      dhcp6: true
+      accept-ra: true
+      routes:
+        - to: "{{ networking_mc_route_prefix }}"
+          scope: link

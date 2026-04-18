@@ -1,0 +1,128 @@
+---
+- name: Create listener system group
+  ansible.builtin.group:
+    name: "{{ listener_group }}"
+    system: true
+    state: present
+
+- name: Create listener system user
+  ansible.builtin.user:
+    name: "{{ listener_user }}"
+    group: "{{ listener_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ listener_install_dir }}"
+    create_home: false
+    state: present
+
+- name: Create listener install directory
+  ansible.builtin.file:
+    path: "{{ listener_install_dir }}"
+    state: directory
+    owner: "{{ listener_user }}"
+    group: "{{ listener_group }}"
+    mode: "0755"
+
+- name: Mark install directory as git safe.directory
+  community.general.git_config:
+    name: safe.directory
+    scope: global
+    value: "{{ listener_install_dir }}"
+
+- name: Clone / update bitcoin-shard-listener repository
+  ansible.builtin.git:
+    repo: "{{ listener_repo }}"
+    dest: "{{ listener_install_dir }}"
+    version: "{{ listener_version }}"
+    force: false
+
+- name: Set ownership of install directory after clone
+  ansible.builtin.file:
+    path: "{{ listener_install_dir }}"
+    owner: "{{ listener_user }}"
+    group: "{{ listener_group }}"
+    recurse: true
+
+- name: Build bitcoin-shard-listener binary
+  ansible.builtin.command:
+    cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -o {{ listener_install_dir }}/bitcoin-shard-listener ."
+    chdir: "{{ listener_install_dir }}"
+    creates: "{{ listener_install_dir }}/bitcoin-shard-listener"
+  environment:
+    PATH: "{{ go_install_dir }}/bin:{{ ansible_env.PATH }}"
+    CGO_ENABLED: "0"
+    GOOS: "{{ 'freebsd' if ansible_os_family == 'FreeBSD' else 'linux' }}"
+    GOARCH: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    HOME: "/tmp"
+    GOPATH: "/tmp/gopath"
+    GOCACHE: "/tmp/gocache"
+  changed_when: true
+
+- name: Install binary to system bin dir
+  ansible.builtin.copy:
+    src: "{{ listener_install_dir }}/bitcoin-shard-listener"
+    dest: "{{ listener_bin_dir }}/bitcoin-shard-listener"
+    remote_src: true
+    owner: root
+    group: "{{ listener_group }}"
+    mode: "0755"
+  notify: Restart bitcoin-shard-listener
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: "{{ '/usr/local/etc' if ansible_os_family == 'FreeBSD' else '/etc/bitcoin-shard-listener' }}"
+    state: directory
+    owner: root
+    group: "{{ listener_group }}"
+    mode: "0750"
+
+- name: Deploy environment config file
+  ansible.builtin.template:
+    src: config.env.j2
+    dest: "{{ '/usr/local/etc/bitcoin-shard-listener.conf' if ansible_os_family == 'FreeBSD' else '/etc/bitcoin-shard-listener/config.env' }}"
+    owner: root
+    group: "{{ listener_group }}"
+    mode: "0640"
+  notify: Restart bitcoin-shard-listener
+
+- name: Deploy systemd service unit (Linux)
+  ansible.builtin.template:
+    src: bitcoin-shard-listener.service.j2
+    dest: /etc/systemd/system/bitcoin-shard-listener.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_os_family != 'FreeBSD'
+  notify:
+    - Reload systemd
+    - Restart bitcoin-shard-listener
+
+- name: Deploy rc.d service script (FreeBSD)
+  ansible.builtin.template:
+    src: bitcoin_shard_listener.rc.j2
+    dest: /usr/local/etc/rc.d/bitcoin_shard_listener
+    owner: root
+    group: wheel
+    mode: "0755"
+  when: ansible_os_family == 'FreeBSD'
+  notify: Restart bitcoin-shard-listener
+
+- name: Enable and start bitcoin-shard-listener (Linux)
+  ansible.builtin.systemd:
+    name: bitcoin-shard-listener
+    enabled: true
+    state: started
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Enable bitcoin-shard-listener in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^bitcoin_shard_listener_enable='
+    line: 'bitcoin_shard_listener_enable="YES"'
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Start bitcoin-shard-listener (FreeBSD)
+  ansible.builtin.service:
+    name: bitcoin_shard_listener
+    state: started
+  when: ansible_os_family == 'FreeBSD'

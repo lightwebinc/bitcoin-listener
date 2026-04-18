@@ -1,0 +1,40 @@
+---
+- name: Install nftables (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: nftables
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure /etc/nftables.d exists
+  ansible.builtin.file:
+    path: /etc/nftables.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy bitcoin-listener nftables ruleset
+  ansible.builtin.template:
+    src: bitcoin-listener.nft.j2
+    dest: /etc/nftables.d/60-bitcoin-listener.nft
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "nft -c -f %s"
+  notify: Reload nftables
+
+- name: Ensure /etc/nftables.conf includes the listener fragment
+  ansible.builtin.blockinfile:
+    path: /etc/nftables.conf
+    create: true
+    mode: "0644"
+    marker: "# {mark} bitcoin-listener include"
+    block: |
+      include "/etc/nftables.d/60-bitcoin-listener.nft"
+  notify: Reload nftables
+
+- name: Enable nftables at boot
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started

@@ -1,0 +1,10 @@
+[Unit]
+Description=BGP health-check timer for bitcoin-shard-listener
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=10s
+Unit=bsl-bgp-check.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,66 @@
+! FRR configuration for bitcoin-listener BGP
+! Managed by Ansible — do not edit manually
+!
+! Sole purpose: advertise this listener's own unicast prefix into the fabric
+! so MLD/PIM can build multicast distribution trees toward the node.
+!
+frr defaults traditional
+log syslog informational
+!
+router bgp {{ bgp_local_as }}
+ bgp router-id {{ bgp_router_id }}
+{% if bgp_peer_ip | length > 0 %}
+ neighbor {{ bgp_peer_ip }} remote-as {{ bgp_peer_as }}
+ neighbor {{ bgp_peer_ip }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
+{% if bgp_password | length > 0 %}
+ neighbor {{ bgp_peer_ip }} password {{ bgp_password }}
+{% endif %}
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+ neighbor {{ bgp_peer_ip6 }} remote-as {{ bgp_peer_as }}
+ neighbor {{ bgp_peer_ip6 }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
+{% if bgp_password | length > 0 %}
+ neighbor {{ bgp_peer_ip6 }} password {{ bgp_password }}
+{% endif %}
+{% endif %}
+{% if bgp_peer_ip | length > 0 and bgp_prefix | length > 0 %}
+ !
+ address-family ipv4 unicast
+{% for prefix in bgp_prefix %}
+  network {{ prefix }}
+{% endfor %}
+  neighbor {{ bgp_peer_ip }} route-map EXPORT4 out
+  neighbor {{ bgp_peer_ip }} route-map DENY in
+ exit-address-family
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 and bgp_prefix6 | length > 0 %}
+ !
+ address-family ipv6 unicast
+{% for prefix in bgp_prefix6 %}
+  network {{ prefix }}
+{% endfor %}
+  neighbor {{ bgp_peer_ip6 }} route-map EXPORT6 out
+  neighbor {{ bgp_peer_ip6 }} route-map DENY in
+ exit-address-family
+{% endif %}
+!
+{% if bgp_prefix | length > 0 %}
+{% for prefix in bgp_prefix %}
+ip prefix-list BGP4 seq {{ (loop.index0 * 10) + 10 }} permit {{ prefix }}
+{% endfor %}
+!
+route-map EXPORT4 permit 10
+ match ip address prefix-list BGP4
+!
+{% endif %}
+{% if bgp_prefix6 | length > 0 %}
+{% for prefix in bgp_prefix6 %}
+ipv6 prefix-list BGP6 seq {{ (loop.index0 * 10) + 10 }} permit {{ prefix }}
+{% endfor %}
+!
+route-map EXPORT6 permit 10
+ match ipv6 address prefix-list BGP6
+!
+{% endif %}
+route-map DENY deny 10
+!

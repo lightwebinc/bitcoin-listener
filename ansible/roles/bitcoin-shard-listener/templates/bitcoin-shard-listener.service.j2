@@ -1,0 +1,36 @@
+[Unit]
+Description=Bitcoin Shard Listener
+Documentation=https://github.com/lightwebinc/bitcoin-shard-listener
+After=network-online.target
+Wants=network-online.target
+{% if enable_bgp | bool %}
+{% if bgp_daemon == 'bird2' %}
+Before=bird.service
+{% else %}
+Before=frr.service
+{% endif %}
+{% endif %}
+
+[Service]
+Type=simple
+User={{ listener_user }}
+Group={{ listener_group }}
+EnvironmentFile=/etc/bitcoin-shard-listener/config.env
+ExecStart={{ listener_bin_dir }}/bitcoin-shard-listener
+{% if enable_bgp | bool %}
+ExecStop=/usr/local/bin/bsl-bgp-withdraw.sh
+{% endif %}
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+LimitNOFILE=65536
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths={{ listener_install_dir }}
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

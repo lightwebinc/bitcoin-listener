@@ -1,0 +1,13 @@
+# Managed by Ansible (bitcoin-listener) — do not edit manually
+# BGP VIPs on loopback — listener identity (NOT shared anycast).
+network:
+  version: 2
+  ethernets:
+    lo:
+      addresses:
+{% if bgp_vip | length > 0 %}
+        - "{{ bgp_vip }}/32"
+{% endif %}
+{% if bgp_vip6 | length > 0 %}
+        - "{{ bgp_vip6 }}/128"
+{% endif %}

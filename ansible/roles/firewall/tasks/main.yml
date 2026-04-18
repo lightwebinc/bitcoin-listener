@@ -1,0 +1,21 @@
+---
+# Multicast-fabric perimeter enforcement.
+#
+# Invariant: the fabric interface carries ONLY
+#   (a) inbound multicast group data on LISTEN_PORT (plus MLD/ICMPv6)
+#   (b) outbound NACK datagrams to configured retry endpoints
+# All other unicast is denied, and no forwarding bridges the fabric interface
+# with downstream / management interfaces.
+#
+# Management (SSH, metrics scrape) is only permitted on non-fabric interfaces
+# from the mgmt_cidrs_v4 / mgmt_cidrs_v6 allow-lists.
+#
+# BGP (TCP/179) is permitted only when enable_bgp is true.
+
+- name: Configure firewall (Linux nftables)
+  ansible.builtin.include_tasks: linux.yml
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Configure firewall (FreeBSD pf)
+  ansible.builtin.include_tasks: freebsd.yml
+  when: ansible_os_family == 'FreeBSD'

@@ -1,0 +1,61 @@
+---
+# Listener receive side. Unlike the ingress proxy (which forwards multicast
+# and therefore needs mc_forwarding + ff00::/8 route for the send path), the
+# listener only *receives* multicast via MLD group joins. No forwarding is
+# needed; we still install a link-scope route so packets match the correct
+# interface when kernel selects ingress.
+
+- name: Enable IPv6 forwarding via sysctl (ingress receive is MLD-only; forwarding off)
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/60-bitcoin-listener.conf
+    reload: true
+  loop:
+    - { name: net.ipv6.conf.all.accept_ra, value: "1" }
+    - { name: "net.ipv6.conf.{{ networking_ingress_iface }}.accept_ra", value: "1" }
+
+- name: Deploy netplan config for ethernet ingress
+  ansible.builtin.template:
+    src: netplan-ethernet.yaml.j2
+    dest: /etc/netplan/60-bitcoin-listener.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: ingress_mode == 'ethernet'
+  notify: Apply netplan
+
+- name: Deploy netplan config for GRE6 tunnel ingress
+  ansible.builtin.template:
+    src: netplan-gre.yaml.j2
+    dest: /etc/netplan/61-bitcoin-listener-gre.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: ingress_mode == 'gre'
+  notify: Apply netplan
+
+- name: Deploy BGP VIP netplan config
+  ansible.builtin.template:
+    src: netplan-vip.yaml.j2
+    dest: /etc/netplan/62-bitcoin-listener-vip.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: enable_bgp | bool and (bgp_vip | length > 0 or bgp_vip6 | length > 0)
+  notify: Apply netplan
+
+- name: Apply multicast route on ingress interface (Linux)
+  ansible.builtin.command:
+    argv:
+      - ip
+      - -6
+      - route
+      - replace
+      - "{{ networking_mc_route_prefix }}"
+      - dev
+      - "{{ networking_ingress_iface }}"
+  register: networking_mc_route_result
+  changed_when: networking_mc_route_result.rc == 0
+  failed_when: false

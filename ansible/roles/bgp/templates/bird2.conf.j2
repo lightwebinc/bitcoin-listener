@@ -1,0 +1,103 @@
+# BIRD2 configuration for bitcoin-listener BGP
+# Managed by Ansible — do not edit manually
+#
+# Sole purpose: advertise this listener's own unicast prefix into the fabric
+# so MLD/PIM can build multicast distribution trees toward the node.
+# Downstream-consumer anycast is NOT handled here — the service-provider /
+# consumer demarcation lives at the multicast fabric edge, not the listener.
+
+router id {{ bgp_router_id }};
+
+protocol device {}
+
+protocol direct {
+  ipv4;
+  ipv6;
+}
+
+protocol kernel {
+  ipv4 {
+    export all;
+  };
+  ipv6 {
+    export all;
+  };
+}
+
+{% if bgp_prefix | length > 0 %}
+define BGP4_PFXS = [ {{ bgp_prefix | join(', ') }} ];
+filter export_bgp4 {
+  if net ~ BGP4_PFXS then accept;
+  reject;
+}
+{% endif %}
+
+{% if bgp_prefix6 | length > 0 %}
+define BGP6_PFXS = [ {{ bgp_prefix6 | join(', ') }} ];
+filter export_bgp6 {
+  if net ~ BGP6_PFXS then accept;
+  reject;
+}
+{% endif %}
+
+filter accept_none { reject; }
+
+{% if bgp_prefix | length > 0 %}
+protocol static bgp4 {
+  ipv4;
+{% for prefix in bgp_prefix %}
+  route {{ prefix }} blackhole;
+{% endfor %}
+}
+{% endif %}
+
+{% if bgp_prefix6 | length > 0 %}
+protocol static bgp6 {
+  ipv6;
+{% for prefix in bgp_prefix6 %}
+  route {{ prefix }} blackhole;
+{% endfor %}
+}
+{% endif %}
+
+{% if bgp_peer_ip | length > 0 %}
+protocol bgp upstream4 {
+  local as {{ bgp_local_as }};
+  neighbor {{ bgp_peer_ip }} as {{ bgp_peer_as }};
+  hold time {{ bgp_hold_time }};
+  keepalive time {{ bgp_keepalive }};
+{% if bgp_password | length > 0 %}
+  password "{{ bgp_password }}";
+{% endif %}
+
+  ipv4 {
+    import filter accept_none;
+{% if bgp_prefix | length > 0 %}
+    export filter export_bgp4;
+{% else %}
+    export filter accept_none;
+{% endif %}
+  };
+}
+{% endif %}
+
+{% if bgp_peer_ip6 | length > 0 %}
+protocol bgp upstream6 {
+  local as {{ bgp_local_as }};
+  neighbor {{ bgp_peer_ip6 }} as {{ bgp_peer_as }};
+  hold time {{ bgp_hold_time }};
+  keepalive time {{ bgp_keepalive }};
+{% if bgp_password | length > 0 %}
+  password "{{ bgp_password }}";
+{% endif %}
+
+  ipv6 {
+    import filter accept_none;
+{% if bgp_prefix6 | length > 0 %}
+    export filter export_bgp6;
+{% else %}
+    export filter accept_none;
+{% endif %}
+  };
+}
+{% endif %}

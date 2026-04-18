@@ -1,0 +1,79 @@
+# pf anchor ruleset for bitcoin-listener (FreeBSD)
+# Managed by Ansible — do not edit manually
+#
+# Perimeter model mirrors the nftables policy:
+#   * Fabric iface ({{ firewall_fabric_iface }}): multicast-in + NACK-out only
+#   * Non-fabric ifaces: management + downstream egress
+#   * No forwarding
+
+fabric_if = "{{ firewall_fabric_iface }}"
+listen_port = "{{ listen_port }}"
+metrics_port = "{{ firewall_metrics_port }}"
+egress_host = "{{ firewall_egress_host }}"
+egress_port = "{{ firewall_egress_port }}"
+
+{% set retry_v4_hosts = firewall_retry_endpoint_hosts | select('match', '^[0-9.]+$') | list %}
+{% set retry_v6_hosts = firewall_retry_endpoint_hosts | reject('match', '^[0-9.]+$') | list %}
+
+{% if retry_v4_hosts | length > 0 %}
+table <retry_v4> const { {{ retry_v4_hosts | join(', ') }} }
+{% else %}
+table <retry_v4> const { }
+{% endif %}
+{% if retry_v6_hosts | length > 0 %}
+table <retry_v6> const { {{ retry_v6_hosts | join(', ') }} }
+{% else %}
+table <retry_v6> const { }
+{% endif %}
+
+{% if mgmt_cidrs_v4 | length > 0 %}
+table <mgmt_v4> const { {{ mgmt_cidrs_v4 | join(', ') }} }
+{% else %}
+table <mgmt_v4> const { }
+{% endif %}
+{% if mgmt_cidrs_v6 | length > 0 %}
+table <mgmt_v6> const { {{ mgmt_cidrs_v6 | join(', ') }} }
+{% else %}
+table <mgmt_v6> const { }
+{% endif %}
+
+# Default deny
+block all
+
+# Allow loopback
+pass quick on lo0 all
+
+# Keep state for established connections
+pass quick proto tcp flags S/SA keep state
+
+# ICMPv6 / MLD
+pass quick inet6 proto icmp6
+pass quick inet proto icmp
+
+# --- Multicast receive: fabric iface only ---
+pass in quick on $fabric_if inet6 proto udp to ff00::/8 port $listen_port keep state
+
+# --- NACK dispatch: fabric iface only, to retry endpoints ---
+{% if retry_v4_hosts | length > 0 %}
+pass out quick on $fabric_if inet  proto udp to <retry_v4> keep state
+{% endif %}
+{% if retry_v6_hosts | length > 0 %}
+pass out quick on $fabric_if inet6 proto udp to <retry_v6> keep state
+{% endif %}
+
+# --- Management: SSH + metrics scrape, non-fabric only, from mgmt CIDRs ---
+pass in quick on ! $fabric_if inet  proto tcp from <mgmt_v4> to any port { 22, $metrics_port } keep state
+pass in quick on ! $fabric_if inet6 proto tcp from <mgmt_v6> to any port { 22, $metrics_port } keep state
+
+# --- Downstream egress: unicast to egress_addr only, non-fabric only ---
+pass out quick on ! $fabric_if proto {{ egress_proto }} to $egress_host port $egress_port keep state
+
+{% if enable_bgp | bool %}
+# --- BGP control plane ---
+pass quick proto tcp from any to any port 179 keep state
+pass quick proto tcp from any port 179 to any keep state
+{% endif %}
+
+# --- Basic outbound: DNS / NTP / HTTP(S) on non-fabric ---
+pass out quick on ! $fabric_if proto udp to any port { 53, 123 } keep state
+pass out quick on ! $fabric_if proto tcp to any port { 53, 80, 443 } keep state

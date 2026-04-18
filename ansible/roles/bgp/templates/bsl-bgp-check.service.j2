@@ -1,0 +1,7 @@
+[Unit]
+Description=BGP health-check for bitcoin-shard-listener
+After=bitcoin-shard-listener.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bsl-bgp-check.sh
