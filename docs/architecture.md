@@ -8,7 +8,7 @@ fabric, the listener *receives* those frames, filters by shard / subtree, and
 forwards matching frames as unicast to downstream consumers.
 
 ```
-       ┌───────────────┐     IPv6 multicast fabric     ┌────────────────┐
+       ┌───────────────┐     IPv6 multicast fabric      ┌────────────────┐
        │ shard-proxy   │ ───►  (FF0x::/16, UDP 9001)  ──► shard-listener│
        │ (ingress)     │                                │                │
        └───────────────┘                                └──────┬─────────┘
