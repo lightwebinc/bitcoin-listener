@@ -13,8 +13,7 @@ journalctl -u bsl-bgp-check.service --since -5min
 ```
 
 Unit file: `/etc/systemd/system/bitcoin-shard-listener.service`
-(see template
-`@/home/light/repo/bitcoin-listener/ansible/roles/bitcoin-shard-listener/templates/bitcoin-shard-listener.service.j2`).
+(see template `ansible/roles/bitcoin-shard-listener/templates/bitcoin-shard-listener.service.j2`).
 
 Environment file: `/etc/bitcoin-shard-listener/config.env`.
 

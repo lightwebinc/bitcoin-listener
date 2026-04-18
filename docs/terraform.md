@@ -54,7 +54,7 @@ terraform apply
 The AWS example creates a Security Group that is the cloud-level perimeter.
 The on-host nftables ruleset (deployed by the `firewall` Ansible role) is
 the fine-grained perimeter. Both must stay aligned — see
-`@/home/light/repo/bitcoin-listener/docs/security.md`.
+[`security.md`](security.md).
 
 ## Extending to other clouds
 

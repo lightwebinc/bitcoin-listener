@@ -9,8 +9,7 @@ tail -f /var/log/bitcoin_shard_listener.log
 ```
 
 rc.d script: `/usr/local/etc/rc.d/bitcoin_shard_listener`
-(see template
-`@/home/light/repo/bitcoin-listener/ansible/roles/bitcoin-shard-listener/templates/bitcoin_shard_listener.rc.j2`).
+(see template `ansible/roles/bitcoin-shard-listener/templates/bitcoin_shard_listener.rc.j2`).
 
 Environment file: `/usr/local/etc/bitcoin-shard-listener.conf`.
 

@@ -56,12 +56,11 @@ groups). The set of groups actually joined is:
 | `"0,1"`               | only groups 0 and 1                       |
 | `"3"`                 | only group 3                              |
 
-Implementation: `@/home/light/repo/bitcoin-shard-listener/main.go:147-163`
-builds the join list; each worker calls
-`@/home/light/repo/bitcoin-shard-listener/listener/listener.go:97-101`
-(`pc.JoinGroup`) only for those addresses. The kernel's MLDv1/v2 stack
-means unjoined groups are never delivered to the socket in the first
-place.
+Implementation: `bitcoin-shard-listener/main.go` (`buildGroups`) builds the
+join list; each worker calls `pc.JoinGroup` only for those addresses
+(`bitcoin-shard-listener/listener/listener.go`). The kernel's MLDv1/v2
+stack means unjoined groups are never delivered to the socket in the
+first place.
 
 > **Best practice:** always set `shard_include` in production. A listener
 > with `shard_include=""` joins every group on the fabric and receives

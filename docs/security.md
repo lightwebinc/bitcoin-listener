@@ -37,8 +37,7 @@ The invariant this repo enforces is:
 
 ### Linux (nftables)
 
-Ruleset template:
-`@/home/light/repo/bitcoin-listener/ansible/roles/firewall/templates/bitcoin-listener.nft.j2`
+Ruleset template: `ansible/roles/firewall/templates/bitcoin-listener.nft.j2`.
 
 Installed as `/etc/nftables.d/60-bitcoin-listener.nft` and sourced from
 `/etc/nftables.conf` via a managed `include` block. `nftables.service` is
@@ -53,8 +52,7 @@ nft -c -f /etc/nftables.d/60-bitcoin-listener.nft     # validate syntax
 
 ### FreeBSD (pf)
 
-Anchor template:
-`@/home/light/repo/bitcoin-listener/ansible/roles/firewall/templates/bitcoin-listener.pf.conf.j2`
+Anchor template: `ansible/roles/firewall/templates/bitcoin-listener.pf.conf.j2`.
 
 Installed as `/etc/pf.anchors/bitcoin-listener` and loaded via a managed
 anchor block in `/etc/pf.conf`.

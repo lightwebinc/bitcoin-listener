@@ -12,7 +12,7 @@ Two uses that are **not** supported here:
    demarcation lives at the fabric edge, not the listener. If you need
    anycast toward consumers, put that VIP on your fabric egress devices.
 2. **NACK reply routing.** NACK is send-only
-   (`@/home/light/repo/bitcoin-shard-listener/nack/nack.go:245-278`); the
+   (`bitcoin-shard-listener/nack/nack.go`); the
    listener uses `net.DialUDP` with an ephemeral source and does not
    receive unicast NACK replies. The retry node re-multicasts missing
    frames, which the listener picks up on its normal multicast receive path.

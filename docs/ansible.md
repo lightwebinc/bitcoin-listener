@@ -43,7 +43,7 @@ BGP so TCP/179 is permitted when the daemon starts.
 
 ## Key variables
 
-See `@/home/light/repo/bitcoin-listener/ansible/group_vars/all.yml` for the full list. Quick reference:
+See `ansible/group_vars/all.yml` for the full list. Quick reference:
 
 | Variable           | Default                  | Notes                                               |
 |--------------------|--------------------------|------------------------------------------------------|
