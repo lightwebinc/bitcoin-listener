@@ -35,7 +35,7 @@ forwards matching frames as unicast to downstream consumers.
    - **Shard filter** (defense-in-depth) — drops any frame whose group
      index is not in `shard_include` even if the kernel delivers it.
    - **Subtree filter** — V2 frames carry a 32-byte `SubtreeID`; frames
-     pass iff the ID is in `subtree_include` (or the set is empty) **and**
+     pass if the ID is in `subtree_include` (or the set is empty) **and**
      is not in `subtree_exclude`.
 3. **NACK tracker** (NORM-inspired) detects sequence gaps per
    `(SenderID, groupIdx)` and dispatches 64-byte NACK datagrams via UDP to
@@ -77,9 +77,7 @@ only pass through `subtree_include` if the zero ID is explicitly listed.
 - **BGP** (optional) advertises *this listener's own unicast prefix* into the
   fabric so MLD/PIM can build distribution trees toward the node in L3
   fabrics. The loopback VIP (`bgp_vip`/`bgp_vip6`) is the listener's
-  identity — **not** a shared anycast address. Downstream-consumer anycast
-  is explicitly out of scope; the service-provider / consumer demarcation
-  lives at the multicast fabric edge, not the listener.
+  identity.
 - **Metrics** (Prometheus + OTLP) exposed on `:9200/healthz`, `:9200/readyz`,
   `:9200/metrics`. `OTLP_INTERVAL` controls the push cadence (default 30 s).
 - **Firewall** (nftables on Linux, pf on FreeBSD) enforces the
