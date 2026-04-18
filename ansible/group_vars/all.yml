@@ -28,7 +28,7 @@ mc_scope: "site"                # link | site | org | global
 mc_base_addr: ""                # Optional assigned prefix base
 
 # Filtering (empty strings = no filtering)
-shard_include: ""               # Comma-separated shard indices/ranges, e.g. "0,1,4-7"
+shard_include: ""               # Comma-separated shard indices, e.g. "0,1" (empty = join ALL groups)
 subtree_include: ""             # Comma-separated hex subtree IDs to allow (V2 only)
 subtree_exclude: ""             # Comma-separated hex subtree IDs to drop (V2 only)
 

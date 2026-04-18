@@ -71,7 +71,7 @@ variable "mc_route_prefix" {
 }
 
 variable "shard_include" {
-  description = "Comma-separated shard indices/ranges to subscribe (empty = all)"
+  description = "Comma-separated shard indices to subscribe, e.g. \"0,1\" (empty = all 2^shard_bits groups; strongly recommend setting this explicitly in production)"
   type        = string
   default     = ""
 }

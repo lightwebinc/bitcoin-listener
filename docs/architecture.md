@@ -25,12 +25,18 @@ forwards matching frames as unicast to downstream consumers.
 
 ## Data plane
 
-1. **Ingress interface** (`ingress_iface` / `gre6-bsl`) joins the per-shard
-   IPv6 multicast groups via MLD. The listener receives frames directly on
-   this interface; no routing-table entry is required on the receive side
-   (unlike the proxy's send path, which needs `ff00::/8` routed to
-   `egress_iface`).
-2. **Shard and subtree filters** discard non-matching frames in user space.
+1. **Ingress interface** (`ingress_iface` / `gre6-bsl`) joins a **subset**
+   of the per-shard IPv6 multicast groups via MLD — see
+   [Group subscription](#group-subscription) below. The listener receives
+   frames directly on this interface; no routing-table entry is required
+   on the receive side (unlike the proxy's send path, which needs
+   `ff00::/8` routed to `egress_iface`).
+2. **User-space filters** apply a second pass:
+   - **Shard filter** (defense-in-depth) — drops any frame whose group
+     index is not in `shard_include` even if the kernel delivers it.
+   - **Subtree filter** — V2 frames carry a 32-byte `SubtreeID`; frames
+     pass iff the ID is in `subtree_include` (or the set is empty) **and**
+     is not in `subtree_exclude`.
 3. **NACK tracker** (NORM-inspired) detects sequence gaps per
    `(SenderID, groupIdx)` and dispatches 64-byte NACK datagrams via UDP to
    configured `retry_endpoints`. NACK is **send-only** — the retry node
@@ -38,6 +44,33 @@ forwards matching frames as unicast to downstream consumers.
    multicast path.
 4. **Downstream egress** unicasts accepted frames over UDP or TCP to
    `egress_addr`. `strip_header=true` emits payload only.
+
+### Group subscription
+
+The total number of groups is `2^shard_bits` (e.g. `shard_bits=2` → 4
+groups). The set of groups actually joined is:
+
+| `shard_include` value | Groups joined via MLD                    |
+|-----------------------|-------------------------------------------|
+| unset / empty         | **all** `2^shard_bits` groups             |
+| `"0,1"`               | only groups 0 and 1                       |
+| `"3"`                 | only group 3                              |
+
+Implementation: `@/home/light/repo/bitcoin-shard-listener/main.go:147-163`
+builds the join list; each worker calls
+`@/home/light/repo/bitcoin-shard-listener/listener/listener.go:97-101`
+(`pc.JoinGroup`) only for those addresses. The kernel's MLDv1/v2 stack
+means unjoined groups are never delivered to the socket in the first
+place.
+
+> **Best practice:** always set `shard_include` in production. A listener
+> with `shard_include=""` joins every group on the fabric and receives
+> every frame — which is rarely what you want and puts unnecessary load on
+> the NIC, kernel, and parser.
+
+`subtree_include` / `subtree_exclude` are comma-separated **32-byte hex**
+subtree IDs (V2 frames only). V1 frames carry a zero SubtreeID and will
+only pass through `subtree_include` if the zero ID is explicitly listed.
 
 ## Control plane
 
