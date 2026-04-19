@@ -113,7 +113,7 @@ jobs:
       matrix:
         dir:
           - terraform/modules/listener-node
-          - terraform/modules/bgp-anycast
+          - terraform/modules/bgp
           - terraform/examples/generic
           - terraform/examples/aws-ec2
     steps:

@@ -1,13 +1,25 @@
 # Managed by Ansible (bitcoin-listener) — do not edit manually
-# GRE6 tunnel for multicast ingress — receives fabric multicast over IPv6.
+#
+# GRE tunnel for multicast ingress.
+#
+# The fabric itself is IPv6-only: the tunnel's inner payload is always IPv6
+# multicast. The outer transport may be IPv6 (ip6gre) or IPv4 (gre), chosen
+# via gre_outer_proto.
+#
 # When ingress_mode=gre, remember to set ingress_iface to {{ gre_iface }}.
 network:
   version: 2
   tunnels:
     {{ gre_iface }}:
+{% if gre_outer_proto == 'ipv4' %}
+      mode: gre
+      local: "{{ gre_local_ip4 }}"
+      remote: "{{ gre_remote_ip4 }}"
+{% else %}
       mode: ip6gre
       local: "{{ gre_local_ip6 }}"
       remote: "{{ gre_remote_ip6 }}"
+{% endif %}
       addresses:
         - "{{ gre_inner_ipv6 }}"
       routes:

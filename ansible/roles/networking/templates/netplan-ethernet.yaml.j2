@@ -1,11 +1,18 @@
 # Managed by Ansible (bitcoin-listener) — do not edit manually
-# Ingress interface: dual-stack (IPv4 + IPv6) — receives multicast frames
-# from the fabric via MLD group joins.
+#
+# Ingress interface: receives multicast frames from the fabric via MLD joins.
+#
+# The fabric is IPv6-only, so multicast receive requires only dhcp6 +
+# accept-ra. dhcp4 is kept enabled by default because the same interface
+# typically also carries management traffic (SSH, metrics) on single-NIC
+# deployments. On deployments where the ingress interface is dedicated to
+# the fabric (multi-NIC / LXD lab), set `ingress_dhcp4: false` to make the
+# interface IPv6-only.
 network:
   version: 2
   ethernets:
     {{ networking_ingress_iface }}:
-      dhcp4: true
+      dhcp4: {{ (ingress_dhcp4 | default(true)) | bool | ternary('true', 'false') }}
       dhcp6: true
       accept-ra: true
       routes:

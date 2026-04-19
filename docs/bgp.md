@@ -6,19 +6,21 @@ The listener BGP role has **one purpose**: advertise the listener's own
 unicast prefix into the multicast fabric so MLD/PIM can build distribution
 trees toward the node in L3 fabrics.
 
-Two uses that are **not** supported here:
+**NACK reply routing is not needed.** NACK is send-only
+(`bitcoin-shard-listener/nack/nack.go`); the listener uses `net.DialUDP`
+with an ephemeral source and does not receive unicast NACK replies. The
+retry node re-multicasts missing frames, which the listener picks up on
+its normal multicast receive path.
 
-1. **Downstream consumer anycast.** The service-provider / consumer
-   demarcation lives at the fabric edge, not the listener. If you need
-   anycast toward consumers, put that VIP on your fabric egress devices.
-2. **NACK reply routing.** NACK is send-only
-   (`bitcoin-shard-listener/nack/nack.go`); the
-   listener uses `net.DialUDP` with an ephemeral source and does not
-   receive unicast NACK replies. The retry node re-multicasts missing
-   frames, which the listener picks up on its normal multicast receive path.
+The loopback VIP (`bgp_vip` / `bgp_vip6`) is the listener's own unicast
+identity inside the fabric.
 
-The loopback VIP (`bgp_vip` / `bgp_vip6`) is therefore the listener's own
-identity — **not** a shared anycast address.
+### IPv4 vs IPv6 advertisements
+
+The fabric is IPv6-only, so `bgp_prefix6` / `bgp_vip6` are the
+fabric-relevant fields. `bgp_prefix` / `bgp_vip` (IPv4) remain available
+for environments where the BGP session also carries IPv4 toward an
+upstream provider — they do not participate in fabric reachability.
 
 ## Daemon choice
 

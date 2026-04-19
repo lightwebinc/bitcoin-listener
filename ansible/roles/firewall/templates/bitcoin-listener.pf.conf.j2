@@ -12,14 +12,9 @@ metrics_port = "{{ firewall_metrics_port }}"
 egress_host = "{{ firewall_egress_host }}"
 egress_port = "{{ firewall_egress_port }}"
 
-{% set retry_v4_hosts = firewall_retry_endpoint_hosts | select('match', '^[0-9.]+$') | list %}
+{# Fabric is IPv6-only: only v6 retry endpoints are permitted. #}
 {% set retry_v6_hosts = firewall_retry_endpoint_hosts | reject('match', '^[0-9.]+$') | list %}
 
-{% if retry_v4_hosts | length > 0 %}
-table <retry_v4> const { {{ retry_v4_hosts | join(', ') }} }
-{% else %}
-table <retry_v4> const { }
-{% endif %}
 {% if retry_v6_hosts | length > 0 %}
 table <retry_v6> const { {{ retry_v6_hosts | join(', ') }} }
 {% else %}
@@ -43,22 +38,34 @@ block all
 # Allow loopback
 pass quick on lo0 all
 
+# Fabric is IPv6-only: drop any IPv4 on the fabric interface explicitly.
+block in  quick on $fabric_if inet
+block out quick on $fabric_if inet
+
 # Keep state for established connections
 pass quick proto tcp flags S/SA keep state
 
-# ICMPv6 / MLD
+# ICMPv6 / MLD on fabric; ICMPv4 only on non-fabric
 pass quick inet6 proto icmp6
-pass quick inet proto icmp
+pass quick on ! $fabric_if inet proto icmp
 
 # --- Multicast receive: fabric iface only ---
 pass in quick on $fabric_if inet6 proto udp to ff00::/8 port $listen_port keep state
 
-# --- NACK dispatch: fabric iface only, to retry endpoints ---
-{% if retry_v4_hosts | length > 0 %}
-pass out quick on $fabric_if inet  proto udp to <retry_v4> keep state
-{% endif %}
+# --- NACK dispatch: fabric iface only, IPv6 retry endpoints ---
 {% if retry_v6_hosts | length > 0 %}
 pass out quick on $fabric_if inet6 proto udp to <retry_v6> keep state
+{% endif %}
+
+{% if ingress_mode | default('ethernet') == 'gre' %}
+# --- GRE outer-transport: on non-fabric iface, to/from remote endpoint only ---
+{% if gre_outer_proto | default('ipv6') == 'ipv4' and gre_remote_ip4 | default('') | length > 0 %}
+pass in  quick on ! $fabric_if inet  proto gre from {{ gre_remote_ip4 }} keep state
+pass out quick on ! $fabric_if inet  proto gre to   {{ gre_remote_ip4 }} keep state
+{% elif gre_remote_ip6 | default('') | length > 0 %}
+pass in  quick on ! $fabric_if inet6 proto gre from {{ gre_remote_ip6 }} keep state
+pass out quick on ! $fabric_if inet6 proto gre to   {{ gre_remote_ip6 }} keep state
+{% endif %}
 {% endif %}
 
 # --- Management: SSH + metrics scrape, non-fabric only, from mgmt CIDRs ---

@@ -11,15 +11,10 @@ table inet bitcoin-listener {
     # ------------------------------------------------------------
     # Named sets
     # ------------------------------------------------------------
-{% set retry_v4_hosts = firewall_retry_endpoint_hosts | select('match', '^[0-9.]+$') | list %}
+{# Fabric is IPv6-only: IPv4 retry endpoints would be unreachable over the #}
+{# fabric interface and are rejected here. Any v4 literal in retry_endpoints #}
+{# is a configuration error. #}
 {% set retry_v6_hosts = firewall_retry_endpoint_hosts | reject('match', '^[0-9.]+$') | list %}
-
-    set retry_ep_v4 {
-        type ipv4_addr
-{% if retry_v4_hosts | length > 0 %}
-        elements = { {{ retry_v4_hosts | join(', ') }} }
-{% endif %}
-    }
 
     set retry_ep_v6 {
         type ipv6_addr
@@ -54,6 +49,11 @@ table inet bitcoin-listener {
         ct state invalid drop
         iifname "lo" accept
 
+        # Fabric is IPv6-only. Drop any IPv4 traffic arriving on the fabric iface
+        # regardless of established state (explicit expression of intent — the
+        # default drop would handle it, but we log it for investigability).
+        iifname "{{ firewall_fabric_iface }}" meta nfproto ipv4 counter drop
+
         # ICMPv6 — NDP + MLD + diagnostics (required for multicast + link health)
         icmpv6 type {
             nd-neighbor-solicit, nd-neighbor-advert,
@@ -64,8 +64,8 @@ table inet bitcoin-listener {
             packet-too-big, parameter-problem, time-exceeded
         } accept
 
-        # ICMPv4 — minimal
-        ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable } accept
+        # ICMPv4 — minimal, non-fabric only
+        iifname != "{{ firewall_fabric_iface }}" ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable } accept
 
         # Multicast receive — only on fabric interface, only UDP/LISTEN_PORT
         iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ listen_port }} accept
@@ -73,6 +73,18 @@ table inet bitcoin-listener {
         # Management: SSH + metrics scrape, only from mgmt CIDRs, only on non-fabric
         iifname != "{{ firewall_fabric_iface }}" ip  saddr @mgmt_allow_v4 tcp dport { 22, {{ firewall_metrics_port }} } accept
         iifname != "{{ firewall_fabric_iface }}" ip6 saddr @mgmt_allow_v6 tcp dport { 22, {{ firewall_metrics_port }} } accept
+
+{% if ingress_mode | default('ethernet') == 'gre' %}
+        # GRE outer-transport — inbound tunnel encapsulation from remote endpoint,
+        # arriving on a non-fabric interface (physical / mgmt iface). The decapsulated
+        # IPv6 multicast is then received on the fabric (tunnel) interface and matched
+        # by the multicast rule above.
+{% if gre_outer_proto | default('ipv6') == 'ipv4' and gre_remote_ip4 | default('') | length > 0 %}
+        iifname != "{{ firewall_fabric_iface }}" ip  saddr {{ gre_remote_ip4 }} ip  protocol gre accept
+{% elif gre_remote_ip6 | default('') | length > 0 %}
+        iifname != "{{ firewall_fabric_iface }}" ip6 saddr {{ gre_remote_ip6 }} ip6 nexthdr 47 accept
+{% endif %}
+{% endif %}
 
 {% if enable_bgp | bool %}
         # BGP control plane
@@ -92,6 +104,12 @@ table inet bitcoin-listener {
         ct state established,related accept
         oifname "lo" accept
 
+        # Fabric is IPv6-only outbound too. NACK is IPv6-only because the
+        # retry endpoints live inside the fabric. Retry endpoints specified
+        # as IPv4 literals are rejected at parse time upstream; belt-and-braces
+        # here drops any IPv4 headed out the fabric interface.
+        oifname "{{ firewall_fabric_iface }}" meta nfproto ipv4 counter drop
+
         icmpv6 type {
             nd-neighbor-solicit, nd-neighbor-advert,
             nd-router-solicit,
@@ -99,14 +117,22 @@ table inet bitcoin-listener {
             echo-request, echo-reply,
             packet-too-big, parameter-problem, time-exceeded
         } accept
-        ip protocol icmp accept
+        oifname != "{{ firewall_fabric_iface }}" ip protocol icmp accept
 
-        # NACK dispatch — only to configured retry endpoints, only on fabric iface
-{% if retry_v4_hosts | length > 0 %}
-        oifname "{{ firewall_fabric_iface }}" ip  daddr @retry_ep_v4 meta l4proto udp accept
-{% endif %}
+        # NACK dispatch — only to configured retry endpoints, only on fabric iface.
+        # Fabric is IPv6-only, so only the v6 retry set is permitted here.
 {% if retry_v6_hosts | length > 0 %}
         oifname "{{ firewall_fabric_iface }}" ip6 daddr @retry_ep_v6 meta l4proto udp accept
+{% endif %}
+
+{% if ingress_mode | default('ethernet') == 'gre' %}
+        # GRE outer-transport — outbound tunnel encapsulation to remote endpoint,
+        # leaving via a non-fabric (physical) interface.
+{% if gre_outer_proto | default('ipv6') == 'ipv4' and gre_remote_ip4 | default('') | length > 0 %}
+        oifname != "{{ firewall_fabric_iface }}" ip  daddr {{ gre_remote_ip4 }} ip  protocol gre accept
+{% elif gre_remote_ip6 | default('') | length > 0 %}
+        oifname != "{{ firewall_fabric_iface }}" ip6 daddr {{ gre_remote_ip6 }} ip6 nexthdr 47 accept
+{% endif %}
 {% endif %}
 
         # Downstream egress — unicast to egress_addr only, NOT on fabric iface

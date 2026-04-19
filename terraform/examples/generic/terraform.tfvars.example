@@ -36,8 +36,9 @@ mgmt_cidrs_v6   = []
 # gre_remote_ip6 = "2001:db8:feed::1"
 
 # BGP (set enable_bgp = true to use)
-# Listener BGP advertises the listener's own prefix INTO the fabric only.
-# Downstream-consumer anycast is NOT supported; demarcation is at the fabric edge.
+# Listener BGP advertises the listener's own unicast prefix INTO the fabric so
+# MLD/PIM can build multicast distribution trees toward it. NACK is send-only,
+# so no reverse-path advertisement is required.
 enable_bgp   = false
 bgp_daemon   = "bird2"
 bgp_prefix   = []        # e.g. ["203.0.113.50/32"]

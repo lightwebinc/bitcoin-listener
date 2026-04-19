@@ -100,7 +100,7 @@ only pass through `subtree_include` if the zero ID is explicitly listed.
 | Default AS     | `65001`                        | `65002`                         |
 | Metrics port   | `:9100`                        | `:9200`                         |
 | Listen port    | `9000` UDP                     | `9001` UDP (matches proxy egress) |
-| BGP role       | Anycast + reachability         | Listener-reachability **only**  |
+| BGP role       | Fabric reachability            | Listener-reachability **only**  |
 | Firewall role  | n/a                            | Built-in `firewall` Ansible role |
 
 Shared patterns: Go toolchain install, systemd unit hardening, netplan-based

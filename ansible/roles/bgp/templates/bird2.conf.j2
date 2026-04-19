@@ -3,8 +3,7 @@
 #
 # Sole purpose: advertise this listener's own unicast prefix into the fabric
 # so MLD/PIM can build multicast distribution trees toward the node.
-# Downstream-consumer anycast is NOT handled here — the service-provider /
-# consumer demarcation lives at the multicast fabric edge, not the listener.
+# NACK is send-only, so no reverse-path advertisement is required.
 
 router id {{ bgp_router_id }};
 

@@ -14,7 +14,7 @@ terraform {
 
 # Optional: BGP variable aggregation
 module "bgp" {
-  source = "../../modules/bgp-anycast"
+  source = "../../modules/bgp"
 
   enable_bgp   = var.enable_bgp
   bgp_daemon   = var.bgp_daemon

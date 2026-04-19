@@ -17,7 +17,7 @@ Inputs include the full listener configuration (listen port, shard bits,
 egress target, NACK tuning, metrics, OTLP interval, firewall mgmt CIDRs,
 BGP).
 
-### `modules/bgp-anycast`
+### `modules/bgp`
 
 Pure variable-aggregation helper that produces a `bgp_vars` map for feeding
 into `listener-node.extra_ansible_vars`. No resources created.

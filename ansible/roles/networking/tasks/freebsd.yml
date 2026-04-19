@@ -7,7 +7,9 @@
   loop:
     - { regexp: '^ipv6_enable=', line: 'ipv6_enable="YES"' }
 
-- name: Configure dual-stack ingress interface in rc.conf (ethernet, FreeBSD)
+- name: Configure ingress interface in rc.conf (ethernet, FreeBSD)
+  # Fabric is IPv6-only; IPv4 DHCP is retained on the ingress iface only when
+  # it doubles as the management interface (single-NIC deployments).
   ansible.builtin.lineinfile:
     path: /etc/rc.conf
     regexp: "{{ item.regexp }}"
@@ -15,19 +17,23 @@
   loop:
     - regexp: "^ifconfig_{{ networking_ingress_iface }}="
       line: >-
-        ifconfig_{{ networking_ingress_iface }}="DHCP"
+        ifconfig_{{ networking_ingress_iface }}="{{ (ingress_dhcp4 | default(true)) | bool | ternary('DHCP', 'up') }}"
     - regexp: "^ifconfig_{{ networking_ingress_iface }}_ipv6="
       line: >-
         ifconfig_{{ networking_ingress_iface }}_ipv6="inet6 accept_rtadv"
   when: ingress_mode == 'ethernet'
 
-- name: Configure IPv6 GRE (gif) tunnel in rc.conf (FreeBSD)
+- name: Configure GRE (gif) tunnel in rc.conf (FreeBSD)
+  # gif(4) supports both IPv4 and IPv6 outer transport; inner is always IPv6.
   ansible.builtin.blockinfile:
     path: /etc/rc.conf
     marker: "# {mark} bitcoin-listener GRE tunnel"
     block: |
+      {% set tun = (gre_outer_proto == 'ipv4')
+                   | ternary(gre_local_ip4 ~ ' ' ~ gre_remote_ip4,
+                             gre_local_ip6 ~ ' ' ~ gre_remote_ip6) -%}
       cloned_interfaces="gif0"
-      ifconfig_gif0="tunnel {{ gre_local_ip6 }} {{ gre_remote_ip6 }}"
+      ifconfig_gif0="tunnel {{ tun }}"
       ifconfig_gif0_ipv6="inet6 {{ gre_inner_ipv6 }}"
   when: ingress_mode == 'gre'
 

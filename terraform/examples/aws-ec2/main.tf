@@ -99,18 +99,9 @@ resource "aws_security_group" "listener_node" {
   tags = merge(local.common_tags, { Name = "${var.name_prefix}-sg" })
 }
 
-# Multicast receive (UDP) — allow from fabric source range (usually tighter than 0.0.0.0/0)
-resource "aws_vpc_security_group_ingress_rule" "bsv_udp" {
-  for_each = toset(var.fabric_source_cidrs_v4)
-
-  security_group_id = aws_security_group.listener_node.id
-  description       = "Multicast receive UDP (IPv4)"
-  from_port         = var.listen_port
-  to_port           = var.listen_port
-  ip_protocol       = "udp"
-  cidr_ipv4         = each.value
-}
-
+# Multicast receive (UDP) — fabric is IPv6-only, so only a v6 ingress rule
+# exists. Decapsulated multicast on the fabric interface is filtered further
+# by the host-level nftables/pf ruleset.
 resource "aws_vpc_security_group_ingress_rule" "bsv_udp6" {
   for_each = toset(var.fabric_source_cidrs_v6)
 
@@ -120,6 +111,26 @@ resource "aws_vpc_security_group_ingress_rule" "bsv_udp6" {
   to_port           = var.listen_port
   ip_protocol       = "udp"
   cidr_ipv6         = each.value
+}
+
+# GRE outer-transport (ingress_mode = "gre"): allow protocol 47 from the
+# remote tunnel endpoint. Outer may be IPv4 or IPv6 per gre_outer_proto.
+resource "aws_vpc_security_group_ingress_rule" "gre_outer_v4" {
+  count = var.ingress_mode == "gre" && var.gre_outer_proto == "ipv4" && var.gre_remote_ip4 != "" ? 1 : 0
+
+  security_group_id = aws_security_group.listener_node.id
+  description       = "GRE outer transport (IPv4) from tunnel peer"
+  ip_protocol       = "47"
+  cidr_ipv4         = "${var.gre_remote_ip4}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "gre_outer_v6" {
+  count = var.ingress_mode == "gre" && var.gre_outer_proto == "ipv6" && var.gre_remote_ip6 != "" ? 1 : 0
+
+  security_group_id = aws_security_group.listener_node.id
+  description       = "GRE outer transport (IPv6) from tunnel peer"
+  ip_protocol       = "47"
+  cidr_ipv6         = "${var.gre_remote_ip6}/128"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
@@ -236,7 +247,7 @@ locals {
 # BGP variable aggregation
 # ---------------------------------------------------------------
 module "bgp" {
-  source = "../../modules/bgp-anycast"
+  source = "../../modules/bgp"
 
   enable_bgp   = var.enable_bgp
   bgp_daemon   = var.bgp_daemon

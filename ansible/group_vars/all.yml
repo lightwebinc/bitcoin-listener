@@ -72,28 +72,38 @@ ingress_iface: "eth0"           # NIC for multicast group joins. MUST be set per
 # Empty = auto-derive from mc_scope (link=ff02::/16, site=ff05::/16, etc.)
 mc_route_prefix: ""
 
-# GRE6 tunnel (only used when ingress_mode == gre)
-# IPv6-only fabric: local/remote are IPv6, tunnel is ip6gre (Linux) / gif (FreeBSD).
-# When ingress_mode=gre, set ingress_iface to gre_iface on each host.
-gre_local_ip6: ""               # Local tunnel endpoint (listener side)
-gre_remote_ip6: ""              # Remote tunnel endpoint (fabric router)
+# GRE tunnel (only used when ingress_mode == gre).
+#
+# The fabric itself is IPv6-only: the tunnel's *inner* payload is always IPv6
+# multicast. The tunnel's *outer* transport may be IPv6 (ip6gre on Linux, gif
+# on FreeBSD) or IPv4 (gre on Linux, gif on FreeBSD) — e.g. when the fabric
+# ingress is reached over the public IPv4 internet.
+#
+# When ingress_mode=gre, set ingress_iface to gre_iface on each host so the
+# listener joins groups on the tunnel interface.
+gre_outer_proto: "ipv6"         # ipv6 | ipv4 — outer transport for the GRE tunnel
 gre_iface: "gre6-bsl"           # Tunnel interface name
-gre_inner_ipv6: ""              # IPv6 address/prefix inside the tunnel
+gre_inner_ipv6: ""              # IPv6 address/prefix assigned to the tunnel iface
+
+# Outer endpoints: set the pair matching gre_outer_proto.
+gre_local_ip6: ""               # Local outer endpoint (ipv6 outer)
+gre_remote_ip6: ""              # Remote outer endpoint (ipv6 outer)
+gre_local_ip4: ""               # Local outer endpoint (ipv4 outer)
+gre_remote_ip4: ""              # Remote outer endpoint (ipv4 outer)
 
 # ------------------------------------------------------------
 # BGP (optional)
-# Sole purpose on listener: advertise listener's own unicast prefix into the
-# fabric so MLD/PIM can build multicast trees toward it. NACK is send-only,
-# so no reverse-path advertisement is required. Downstream-consumer anycast
-# is NOT supported here — that demarcation lives at the fabric edge.
+# Sole purpose on listener: advertise this listener's own unicast prefix into
+# the fabric so MLD/PIM can build multicast distribution trees toward it.
+# NACK is send-only, so no reverse-path advertisement is required.
 # ------------------------------------------------------------
 enable_bgp: false
 bgp_daemon: "bird2"             # bird2 | frr
 
 bgp_prefix: []                  # IPv4 prefixes announced by this node
-bgp_vip: ""                     # IPv4 loopback VIP (listener identity, not shared anycast)
+bgp_vip: ""                     # IPv4 loopback VIP (this listener's identity)
 bgp_prefix6: []                 # IPv6 prefixes announced by this node
-bgp_vip6: ""                    # IPv6 loopback VIP
+bgp_vip6: ""                    # IPv6 loopback VIP (this listener's identity)
 
 bgp_local_as: 65002             # Listener default AS (ingress uses 65001)
 bgp_peer_as: 65000

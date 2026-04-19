@@ -214,8 +214,8 @@ variable "mgmt_cidrs_v6" {
   default     = []
 }
 
-# BGP (optional) — listener-reachability advertisement into the fabric only.
-# Downstream-consumer anycast is NOT supported here.
+# BGP (optional) — advertises this listener's unicast prefix into the fabric
+# so MLD/PIM can build multicast distribution trees toward it.
 variable "enable_bgp" {
   description = "Enable eBGP"
   type        = bool
@@ -246,13 +246,13 @@ variable "bgp_prefix6" {
 }
 
 variable "bgp_vip" {
-  description = "IPv4 loopback VIP — listener identity (NOT shared anycast)"
+  description = "IPv4 loopback VIP — this listener's unicast identity"
   type        = string
   default     = ""
 }
 
 variable "bgp_vip6" {
-  description = "IPv6 loopback VIP — listener identity (NOT shared anycast)"
+  description = "IPv6 loopback VIP — this listener's unicast identity"
   type        = string
   default     = ""
 }

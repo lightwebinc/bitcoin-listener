@@ -68,14 +68,8 @@ variable "vpc_cidr" {
   default     = "10.10.0.0/16"
 }
 
-variable "fabric_source_cidrs_v4" {
-  description = "IPv4 CIDRs from which the fabric may send multicast UDP to the listener"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
 variable "fabric_source_cidrs_v6" {
-  description = "IPv6 CIDRs from which the fabric may send multicast UDP to the listener"
+  description = "IPv6 CIDRs from which the fabric may send multicast UDP to the listener (fabric is IPv6-only)"
   type        = list(string)
   default     = ["::/0"]
 }
@@ -99,8 +93,36 @@ variable "ingress_mode" {
   default     = "ethernet"
 }
 
+variable "gre_outer_proto" {
+  description = "GRE outer transport: ipv6 (ip6gre / gif over v6) or ipv4 (gre / gif over v4). Inner is always IPv6."
+  type        = string
+  default     = "ipv6"
+  validation {
+    condition     = contains(["ipv4", "ipv6"], var.gre_outer_proto)
+    error_message = "gre_outer_proto must be one of: ipv4, ipv6."
+  }
+}
+
+variable "gre_local_ip4" {
+  description = "Local IPv4 endpoint for GRE tunnel (ingress_mode=gre, gre_outer_proto=ipv4)"
+  type        = string
+  default     = ""
+}
+
+variable "gre_remote_ip4" {
+  description = "Remote IPv4 endpoint for GRE tunnel (ingress_mode=gre, gre_outer_proto=ipv4)"
+  type        = string
+  default     = ""
+}
+
+variable "gre_local_ip6" {
+  description = "Local IPv6 endpoint for ip6gre tunnel (ingress_mode=gre, gre_outer_proto=ipv6)"
+  type        = string
+  default     = ""
+}
+
 variable "gre_remote_ip6" {
-  description = "Remote IPv6 endpoint for ip6gre tunnel (ingress_mode=gre only)"
+  description = "Remote IPv6 endpoint for ip6gre tunnel (ingress_mode=gre, gre_outer_proto=ipv6)"
   type        = string
   default     = ""
 }
