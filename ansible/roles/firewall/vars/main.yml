@@ -18,8 +18,8 @@ firewall_retry_endpoint_hosts: >-
   {{
     firewall_retry_endpoint_list
       | map('regex_replace', ':[0-9]+$', '')
-      | map('regex_replace', '^\\[', '')
-      | map('regex_replace', '\\]$', '')
+      | map('regex_replace', '^\[', '')
+      | map('regex_replace', '\]$', '')
       | list
   }}
 
@@ -27,8 +27,8 @@ firewall_retry_endpoint_hosts: >-
 firewall_egress_host: >-
   {{
     egress_addr
-      | regex_replace('^\\[', '')
-      | regex_replace('\\](:[0-9]+)?$', '')
+      | regex_replace('^\[', '')
+      | regex_replace('\](:[0-9]+)?$', '')
       | regex_replace(':[0-9]+$', '')
   }}
 firewall_egress_port: "{{ egress_addr | regex_replace('^.*:', '') }}"
