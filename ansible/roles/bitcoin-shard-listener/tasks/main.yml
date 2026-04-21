@@ -47,7 +47,6 @@
   ansible.builtin.command:
     cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -o {{ listener_install_dir }}/bitcoin-shard-listener ."
     chdir: "{{ listener_install_dir }}"
-    creates: "{{ listener_install_dir }}/bitcoin-shard-listener"
   environment:
     PATH: "{{ go_install_dir }}/bin:{{ ansible_env.PATH }}"
     CGO_ENABLED: "0"

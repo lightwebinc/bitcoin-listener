@@ -47,6 +47,7 @@ all:
         listener:
           ansible_host: 10.10.10.50
           ingress_iface: enp6s0   # host-level override required
+          num_workers: 1          # host-level: Linux delivers multicast to all REUSEPORT sockets
           egress_addr: "10.10.10.100:9100"
 ```
 
@@ -102,6 +103,8 @@ lxc exec listener -- curl -s http://localhost:9200/metrics | grep bsl_frames_for
 | `git clone` "dubious ownership" | `community.general.git_config` sets `safe.directory` |
 | `go build` VCS stamping error  | `-buildvcs=false` in build command |
 | `ingress_iface` uses wrong default | Set at host level, not group `vars:` |
+| `num_workers` uses wrong default | Set `num_workers: 1` at **host level** — `group_vars/all.yml` default of 0 = NumCPU; Linux delivers multicast to all REUSEPORT sockets so >1 worker produces duplicate frames |
+| Binary not rebuilt on redeploy | Removed `creates:` guard from build task; binary is now always rebuilt on playbook run |
 | Ansible `become` fails without ACL | `acl` package installed by `common` role |
 | Multicast floods all receivers | Enable LXD bridge `multicast_querier` |
 
