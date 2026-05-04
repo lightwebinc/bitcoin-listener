@@ -35,6 +35,16 @@
     dest: "{{ listener_install_dir }}"
     version: "{{ listener_version }}"
     force: false
+  when: listener_local_binary | default('') | length == 0
+
+- name: Push pre-built listener binary (skips git/build)
+  ansible.builtin.copy:
+    src: "{{ listener_local_binary }}"
+    dest: "{{ listener_install_dir }}/bitcoin-shard-listener"
+    owner: "{{ listener_user }}"
+    group: "{{ listener_group }}"
+    mode: "0755"
+  when: listener_local_binary | default('') | length > 0
 
 - name: Set ownership of install directory after clone
   ansible.builtin.file:
@@ -42,6 +52,13 @@
     owner: "{{ listener_user }}"
     group: "{{ listener_group }}"
     recurse: true
+  when: listener_local_binary | default('') | length == 0
+
+- name: Stat existing listener binary in install dir
+  ansible.builtin.stat:
+    path: "{{ listener_install_dir }}/bitcoin-shard-listener"
+  register: listener_binary_stat
+  when: listener_local_binary | default('') | length == 0
 
 - name: Build bitcoin-shard-listener binary
   ansible.builtin.command:
@@ -56,6 +73,16 @@
     GOPATH: "/tmp/gopath"
     GOCACHE: "/tmp/gocache"
   changed_when: true
+  when:
+    - listener_local_binary | default('') | length == 0
+    - not listener_binary_stat.stat.exists or (listener_force_build | default(false) | bool)
+
+- name: Set ownership on pushed/built binary
+  ansible.builtin.file:
+    path: "{{ listener_install_dir }}/bitcoin-shard-listener"
+    owner: "{{ listener_user }}"
+    group: "{{ listener_group }}"
+    mode: "0755"
 
 - name: Install binary to system bin dir
   ansible.builtin.copy:
