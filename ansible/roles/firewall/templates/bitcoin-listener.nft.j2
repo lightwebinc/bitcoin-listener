@@ -70,6 +70,13 @@ table inet bitcoin-listener {
         # Multicast receive — only on fabric interface, only UDP/LISTEN_PORT
         iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ listen_port }} accept
 
+        # ACK/MISS responses from retry endpoints — unicast UDP replies to
+        # NACK requests.  Explicit rule avoids reliance on conntrack which is
+        # unreliable in some environments (LXD VMs, certain kernel configs).
+{% if retry_v6_hosts | length > 0 %}
+        iifname "{{ firewall_fabric_iface }}" ip6 saddr @retry_ep_v6 meta l4proto udp accept
+{% endif %}
+
         # Management: SSH + metrics scrape, only from mgmt CIDRs, only on non-fabric
         iifname != "{{ firewall_fabric_iface }}" ip  saddr @mgmt_allow_v4 tcp dport { 22, {{ firewall_metrics_port }} } accept
         iifname != "{{ firewall_fabric_iface }}" ip6 saddr @mgmt_allow_v6 tcp dport { 22, {{ firewall_metrics_port }} } accept

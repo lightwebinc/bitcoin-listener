@@ -57,6 +57,11 @@ pass in quick on $fabric_if inet6 proto udp to ff00::/8 port $listen_port keep s
 pass out quick on $fabric_if inet6 proto udp to <retry_v6> keep state
 {% endif %}
 
+# --- ACK/MISS responses from retry endpoints: fabric iface only ---
+{% if retry_v6_hosts | length > 0 %}
+pass in quick on $fabric_if inet6 proto udp from <retry_v6> keep state
+{% endif %}
+
 {% if ingress_mode | default('ethernet') == 'gre' %}
 # --- GRE outer-transport: on non-fabric iface, to/from remote endpoint only ---
 {% if gre_outer_proto | default('ipv6') == 'ipv4' and gre_remote_ip4 | default('') | length > 0 %}
