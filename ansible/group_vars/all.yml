@@ -23,6 +23,11 @@ go_install_dir: "/usr/local/go"
 # All flags have env-var equivalents set in the service unit
 # ------------------------------------------------------------
 listen_port: 9001               # UDP port for multicast receive (matches proxy egress_port)
+
+# Beacon discovery (dynamic retry endpoint registry via ADVERT datagrams)
+beacon_enabled: true            # Join beacon group and discover retry endpoints dynamically
+beacon_port: 9300               # UDP port for ADVERT beacons (must match nack_port on retry endpoints)
+beacon_scope: "site"            # Multicast scope for beacon group join: link | site | org | global
 shard_bits: 2
 mc_scope: "site"                # link | site | org | global
 mc_base_addr: ""                # Optional assigned prefix base
@@ -41,7 +46,7 @@ strip_header: false             # Send payload-only datagrams to egress
 retry_endpoints: ""             # Comma-separated host:port retry nodes
 nack_jitter_max: "200ms"
 nack_backoff_max: "5s"
-nack_max_retries: 5
+nack_max_retries: 8             # Budget for 3 beacon + 3 static-seed entries with headroom
 nack_gap_ttl: "10m"
 
 # Runtime / observability

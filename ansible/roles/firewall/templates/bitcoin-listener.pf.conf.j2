@@ -8,6 +8,7 @@
 
 fabric_if = "{{ firewall_fabric_iface }}"
 listen_port = "{{ listen_port }}"
+beacon_port = "{{ beacon_port }}"
 metrics_port = "{{ firewall_metrics_port }}"
 egress_host = "{{ firewall_egress_host }}"
 egress_port = "{{ firewall_egress_port }}"
@@ -49,8 +50,8 @@ pass quick proto tcp flags S/SA keep state
 pass quick inet6 proto icmp6
 pass quick on ! $fabric_if inet proto icmp
 
-# --- Multicast receive: fabric iface only ---
-pass in quick on $fabric_if inet6 proto udp to ff00::/8 port $listen_port keep state
+# --- Multicast receive: fabric iface only (data frames + beacon ADVERTs) ---
+pass in quick on $fabric_if inet6 proto udp to ff00::/8 port { $listen_port, $beacon_port } keep state
 
 # --- NACK dispatch: fabric iface only, IPv6 retry endpoints ---
 {% if retry_v6_hosts | length > 0 %}

@@ -67,8 +67,9 @@ table inet bitcoin-listener {
         # ICMPv4 — minimal, non-fabric only
         iifname != "{{ firewall_fabric_iface }}" ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable } accept
 
-        # Multicast receive — only on fabric interface, only UDP/LISTEN_PORT
-        iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ listen_port }} accept
+        # Multicast receive — only on fabric interface: data frames (listen_port)
+        # and beacon ADVERTs from retry endpoints (beacon_port).
+        iifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport { {{ listen_port }}, {{ beacon_port }} } accept
 
         # ACK/MISS responses from retry endpoints — unicast UDP replies to
         # NACK requests.  Explicit rule avoids reliance on conntrack which is
