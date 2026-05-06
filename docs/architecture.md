@@ -37,11 +37,11 @@ forwards matching frames as unicast to downstream consumers.
    - **Subtree filter** — V2 frames carry a 32-byte `SubtreeID`; frames
      pass if the ID is in `subtree_include` (or the set is empty) **and**
      is not in `subtree_exclude`.
-3. **NACK tracker** (NORM-inspired) detects sequence gaps per
-   `(SenderID, groupIdx)` and dispatches 64-byte NACK datagrams via UDP to
-   configured `retry_endpoints`. NACK is **send-only** — the retry node
-   re-multicasts missing frames, which the listener receives on its normal
-   multicast path.
+3. **NACK tracker** (NORM-inspired) detects hash-chain gaps per group
+   (PrevSeq/CurSeq break) and dispatches 24-byte NACK datagrams via UDP to
+   configured `retry_endpoints`. The retry node re-multicasts missing frames,
+   which the listener receives on its normal multicast path. ACK/MISS responses
+   (16 bytes) drive tier-based escalation.
 4. **Downstream egress** unicasts accepted frames over UDP or TCP to
    `egress_addr`. `strip_header=true` emits payload only.
 
