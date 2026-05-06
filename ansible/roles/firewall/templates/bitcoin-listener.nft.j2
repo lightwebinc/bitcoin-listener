@@ -143,6 +143,12 @@ table inet bitcoin-listener {
 {% endif %}
 {% endif %}
 
+{% if mc_egress_enabled | default(false) | bool %}
+        # Multicast egress — re-emit frames onto egress domain (mc-egress-scope/port).
+        # Fires only on the fabric interface, IPv6 multicast only.
+        oifname "{{ firewall_fabric_iface }}" ip6 daddr ff00::/8 udp dport {{ mc_egress_port if (mc_egress_port | int) > 0 else listen_port }} accept
+{% endif %}
+
         # Downstream egress — unicast to egress_addr only, NOT on fabric iface
 {% if firewall_egress_host | regex_search('^[0-9.]+$') %}
         oifname != "{{ firewall_fabric_iface }}" ip  daddr {{ firewall_egress_host }} {{ egress_proto }} dport {{ firewall_egress_port }} accept
