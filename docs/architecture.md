@@ -5,19 +5,20 @@
 inverse side of the `bitcoin-ingress` / `bitcoin-shard-proxy` pipeline. Where
 the ingress proxy *sends* sharded transaction frames into an IPv6 multicast
 fabric, the listener *receives* those frames, filters by shard / subtree, and
-forwards matching frames as unicast to downstream consumers.
+forwards matching frames as unicast to downstream consumers and/or re-emits
+them via multicast egress for domain bridging.
 
 ```
        ┌───────────────┐     IPv6 multicast fabric      ┌────────────────┐
        │ shard-proxy   │ ───►  (FF0x::/16, UDP 9001)  ──► shard-listener │
        │ (ingress)     │                                │                │
        └───────────────┘                                └──────┬─────────┘
-                                                               │ unicast
-                                                               ▼
-                                                     ┌─────────────────┐
-                                                     │ consumer        │
-                                                     │ (egress_addr)   │
-                                                     └─────────────────┘
+                                                               │ egress
+                                                     ┌────────┼────────┐
+                                                     │         ▼        │
+                                                     │ unicast (UDP/TCP)│─▶ consumer (egress_addr)
+                                                     │ multicast (opt.) │─▶ bridged domain
+                                                     └──────────────────┘
 
                 NACK (UDP, send-only):
                   shard-listener ──► retry-endpoints
@@ -42,8 +43,11 @@ forwards matching frames as unicast to downstream consumers.
    configured `retry_endpoints`. The retry node re-multicasts missing frames,
    which the listener receives on its normal multicast path. ACK/MISS responses
    (16 bytes) drive tier-based escalation.
-4. **Downstream egress** unicasts accepted frames over UDP or TCP to
-   `egress_addr`. `strip_header=true` emits payload only.
+4. **Downstream egress** forwards accepted frames via:
+   - **Unicast** (UDP or TCP) to `egress_addr`. `strip_header=true` emits payload only.
+   - **Multicast egress** (optional, `-mc-egress-enabled`) re-emits frames onto
+     a configurable IPv6 multicast address space for domain bridging (separate
+     scope, interface, port, and hop limit).
 
 ### Group subscription
 
