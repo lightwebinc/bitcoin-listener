@@ -28,6 +28,13 @@ listen_port: 9001               # UDP port for multicast receive (matches proxy 
 beacon_enabled: true            # Join beacon group and discover retry endpoints dynamically
 beacon_port: 9300               # UDP port for ADVERT beacons (must match nack_port on retry endpoints)
 beacon_scope: "site"            # Multicast scope for beacon group join: link | site | org | global
+
+# Subtree group announcements (BRC-127 dynamic filtering)
+subtree_groups: ""              # Comma-separated 32-char hex GroupIDs; empty = disabled
+subtree_group_default_ttl: "900s"  # TTL for entries whose announcement carries TTL=0
+announce_scope: "site"          # Multicast scope(s) for the control group join
+sender_include: ""              # IPv6 CIDRs of trusted announcement senders; empty = all
+sender_exclude: ""              # IPv6 CIDRs to reject before include check
 shard_bits: 2
 mc_scope: "site"                # link | site | org | global
 mc_base_addr: ""                # Optional assigned prefix base
