@@ -1,58 +1,58 @@
 # bitcoin-listener
 
-Infrastructure automation for deploying
+[![Lint](https://github.com/lightwebinc/bitcoin-listener/actions/workflows/lint.yml/badge.svg)](https://github.com/lightwebinc/bitcoin-listener/actions/workflows/lint.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+Ansible and Terraform automation for deploying
 [`bitcoin-shard-listener`](https://github.com/lightwebinc/bitcoin-shard-listener)
-nodes — the multicast-subscriber / unicast-forwarder counterpart to
-[`bitcoin-ingress`](https://github.com/lightwebinc/bitcoin-ingress).
+nodes — multicast subscribers that filter and forward BSV transactions to
+downstream consumers.
 
-## What this repo provides
+```text
+FF05::<shard>:9001  ──multicast──▶  bitcoin-shard-listener  ──UDP/TCP──▶  consumer
+                                    (this repo deploys)
+```
 
-- **Ansible** roles and playbooks to build, install, and operate
-  `bitcoin-shard-listener` on Ubuntu 24.04 and FreeBSD 14.
-- **Terraform** modules and examples (cloud-agnostic + AWS EC2).
-- **Default-on multicast-fabric firewall** (nftables / pf) enforcing the
-  invariant that the fabric interface carries only multicast data inbound
-  and NACK datagrams outbound.
-- **BGP integration** (BIRD2 or FRR) for advertising listener
-  reachability into the fabric.
+Includes a default-on multicast-fabric firewall (nftables / pf) and optional
+BGP integration (BIRD2 / FRR) for listener reachability.
 
-## Quick start
+## Supported Platforms
+
+| OS           | Automation | Service Manager |
+| ------------ | ---------- | --------------- |
+| Ubuntu 24.04 | Ansible    | systemd         |
+| FreeBSD 14   | Ansible    | rc.d            |
+| AWS EC2      | Terraform  | systemd         |
+| Any SSH host | Terraform  | generic         |
+
+## Quick Start
 
 ```sh
-# Ansible-only (existing hosts)
 cd ansible
 ansible-galaxy collection install -r requirements.yml
 cp inventory/hosts.example.yml inventory/hosts.yml
 $EDITOR inventory/hosts.yml
 ansible-playbook -i inventory/hosts.yml site.yml
-
-# Terraform (AWS EC2)
-cd terraform/examples/aws-ec2
-cp terraform.tfvars.example terraform.tfvars
-$EDITOR terraform.tfvars
-terraform init && terraform apply
 ```
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Ansible usage](docs/ansible.md)
-- [Security (multicast-fabric perimeter)](docs/security.md)
+- [Security (fabric perimeter)](docs/security.md)
 - [BGP](docs/bgp.md)
 - [Networking](docs/networking.md)
-- [LXD lab guide](docs/lxd-lab.md)
 - [Terraform](docs/terraform.md)
+- [LXD lab](docs/lxd-lab.md)
 - OS notes: [Ubuntu 24.04](docs/os/ubuntu-24.04.md), [FreeBSD 14](docs/os/freebsd-14.md)
 
-## Relationship to `bitcoin-ingress`
+## Repository Layout
 
-| Concern        | `bitcoin-ingress`      | `bitcoin-listener`                   |
-|----------------|------------------------|---------------------------------------|
-| Direction      | TX (send)              | RX (receive)                          |
-| Listen / fwd   | UDP 9000 → mcast 9001  | mcast 9001 → UDP/TCP `egress_addr`    |
-| Metrics port   | `:9100`                | `:9200`                               |
-| Default AS     | `65001`                | `65002`                               |
-| Firewall role  | n/a                    | built-in (default on)                 |
+```text
+ansible/     Roles and playbooks
+terraform/   Modules and cloud examples
+docs/        Per-topic documentation
+```
 
 ## License
 
