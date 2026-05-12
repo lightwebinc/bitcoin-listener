@@ -3,8 +3,8 @@
 `bitcoin-listener` is the deployment/operations repo for
 [`bitcoin-shard-listener`](https://github.com/lightwebinc/bitcoin-shard-listener) — the
 inverse side of the `bitcoin-ingress` / `bitcoin-shard-proxy` pipeline. Where
-the ingress proxy *sends* sharded transaction frames into an IPv6 multicast
-fabric, the listener *receives* those frames, filters by shard / subtree, and
+the ingress proxy _sends_ sharded transaction frames into an IPv6 multicast
+fabric, the listener _receives_ those frames, filters by shard / subtree, and
 forwards matching frames as unicast to downstream consumers and/or re-emits
 them via multicast egress for domain bridging.
 
@@ -14,15 +14,24 @@ them via multicast egress for domain bridging.
        │ (ingress)     │                                │                │
        └───────────────┘                                └──────┬─────────┘
                                                                │ egress
-                                                     ┌────────┼────────┐
-                                                     │         ▼        │
-                                                     │ unicast (UDP/TCP)│─▶ consumer (egress_addr)
-                                                     │ multicast (opt.) │─▶ bridged domain
-                                                     └──────────────────┘
+                                                      ┌────────┼─────────┐
+                                                      │         ▼        │
+                                                      │ unicast (UDP/TCP)│─▶ consumer (egress_addr)
+                                                      │ multicast (opt.) │─▶ bridged domain
+                                                      └──────────────────┘
 
                 NACK (UDP, send-only):
                   shard-listener ──► retry-endpoints
 ```
+
+## Protocol details
+
+Frame formats, filtering, gap tracking, NACK/retransmission, and beacon
+discovery are documented in the service and project repos:
+
+- [bitcoin-shard-listener — Architecture](https://github.com/lightwebinc/bitcoin-shard-listener/blob/main/docs/architecture.md)
+- [bitcoin-shard-listener — Configuration](https://github.com/lightwebinc/bitcoin-shard-listener/blob/main/docs/configuration.md)
+- [bitcoin-multicast — DESIGN.md](https://github.com/lightwebinc/bitcoin-multicast/blob/main/DESIGN.md)
 
 ## Data plane
 
@@ -32,52 +41,34 @@ them via multicast egress for domain bridging.
    frames directly on this interface; no routing-table entry is required
    on the receive side (unlike the proxy's send path, which needs
    `ff00::/8` routed to `egress_iface`).
-2. **User-space filters** apply a second pass:
-   - **Shard filter** (defense-in-depth) — drops any frame whose group
-     index is not in `shard_include` even if the kernel delivers it.
-   - **Subtree filter** — V2 frames carry a 32-byte `SubtreeID`; frames
-     pass if the ID is in `subtree_include` (or the set is empty) **and**
-     is not in `subtree_exclude`.
-3. **NACK tracker** (NORM-inspired) detects hash-chain gaps per group
-   (PrevSeq/CurSeq break) and dispatches 24-byte NACK datagrams via UDP to
-   configured `retry_endpoints`. The retry node re-multicasts missing frames,
-   which the listener receives on its normal multicast path. ACK/MISS responses
-   (16 bytes) drive tier-based escalation.
-4. **Downstream egress** forwards accepted frames via:
-   - **Unicast** (UDP or TCP) to `egress_addr`. `strip_header=true` emits payload only.
-   - **Multicast egress** (optional, `-mc-egress-enabled`) re-emits frames onto
-     a configurable IPv6 multicast address space for domain bridging (separate
-     scope, interface, port, and hop limit).
+2. **User-space filters** provide a second pass (shard filter + subtree filter).
+3. **NACK tracker** detects sequence gaps and dispatches retransmission
+   requests to configured `retry_endpoints`.
+4. **Downstream egress** forwards accepted frames via unicast (UDP or TCP)
+   and/or multicast egress (domain bridging).
 
 ### Group subscription
 
 The total number of groups is `2^shard_bits` (e.g. `shard_bits=2` → 4
 groups). The set of groups actually joined is:
 
-| `shard_include` value | Groups joined via MLD                    |
-|-----------------------|-------------------------------------------|
-| unset / empty         | **all** `2^shard_bits` groups             |
-| `"0,1"`               | only groups 0 and 1                       |
-| `"3"`                 | only group 3                              |
+| `shard_include` value | Groups joined via MLD         |
+| --------------------- | ----------------------------- |
+| unset / empty         | **all** `2^shard_bits` groups |
+| `"0,1"`               | only groups 0 and 1           |
+| `"3"`                 | only group 3                  |
 
-Implementation: `bitcoin-shard-listener/main.go` (`buildGroups`) builds the
-join list; each worker calls `pc.JoinGroup` only for those addresses
-(`bitcoin-shard-listener/listener/listener.go`). The kernel's MLDv1/v2
-stack means unjoined groups are never delivered to the socket in the
-first place.
+The kernel's MLDv1/v2 stack means unjoined groups are never delivered to
+the socket in the first place.
 
 > **Best practice:** always set `shard_include` in production. A listener
 > with `shard_include=""` joins every group on the fabric and receives
 > every frame — which is rarely what you want and puts unnecessary load on
 > the NIC, kernel, and parser.
 
-`subtree_include` / `subtree_exclude` are comma-separated **32-byte hex**
-subtree IDs (V2 frames only). V1 frames carry a zero SubtreeID and will
-only pass through `subtree_include` if the zero ID is explicitly listed.
-
 ## Control plane
 
-- **BGP** (optional) advertises *this listener's own unicast prefix* into the
+- **BGP** (optional) advertises _this listener's own unicast prefix_ into the
   fabric so MLD/PIM can build distribution trees toward the node in L3
   fabrics. The loopback VIP (`bgp_vip`/`bgp_vip6`) is the listener's
   identity.
@@ -88,24 +79,24 @@ only pass through `subtree_include` if the zero ID is explicitly listed.
 
 ## How this repo is organised
 
-| Layer      | Location          | Purpose                                           |
-|------------|-------------------|---------------------------------------------------|
-| Ansible    | `ansible/`        | Roles + playbooks for provisioning                |
-| Terraform  | `terraform/`      | Node module + AWS / generic examples              |
-| Docs       | `docs/`           | Architecture, ops, security, BGP, networking, OS  |
+| Layer     | Location     | Purpose                                          |
+| --------- | ------------ | ------------------------------------------------ |
+| Ansible   | `ansible/`   | Roles + playbooks for provisioning               |
+| Terraform | `terraform/` | Node module + AWS / generic examples             |
+| Docs      | `docs/`      | Architecture, ops, security, BGP, networking, OS |
 
 ## Relationship to `bitcoin-ingress`
 
-| Concern        | `bitcoin-ingress` (proxy)      | `bitcoin-listener` (this repo) |
-|----------------|--------------------------------|---------------------------------|
-| Direction      | TX onto fabric                 | RX from fabric                  |
-| Primary iface  | `egress_iface` (send)          | `ingress_iface` (receive)       |
-| Needs `ExecStartPre ip -6 route add ff00::/8` | **Yes** | **No** (MLD-only) |
-| Default AS     | `65001`                        | `65002`                         |
-| Metrics port   | `:9100`                        | `:9200`                         |
-| Listen port    | `9000` UDP                     | `9001` UDP (matches proxy egress) |
-| BGP role       | Fabric reachability            | Listener-reachability **only**  |
-| Firewall role  | n/a                            | Built-in `firewall` Ansible role |
+| Concern                                       | `bitcoin-ingress` (proxy) | `bitcoin-listener` (this repo)    |
+| --------------------------------------------- | ------------------------- | --------------------------------- |
+| Direction                                     | TX onto fabric            | RX from fabric                    |
+| Primary iface                                 | `egress_iface` (send)     | `ingress_iface` (receive)         |
+| Needs `ExecStartPre ip -6 route add ff00::/8` | **Yes**                   | **No** (MLD-only)                 |
+| Default AS                                    | `65001`                   | `65002`                           |
+| Metrics port                                  | `:9100`                   | `:9200`                           |
+| Listen port                                   | `9000` UDP                | `9001` UDP (matches proxy egress) |
+| BGP role                                      | Fabric reachability       | Listener-reachability **only**    |
+| Firewall role                                 | n/a                       | Built-in `firewall` Ansible role  |
 
 Shared patterns: Go toolchain install, systemd unit hardening, netplan-based
 interface config on Ubuntu, rc.d on FreeBSD, BGP via BIRD2 or FRR,
