@@ -58,10 +58,10 @@ variable "mc_scope" {
   default     = "site"
 }
 
-variable "mc_base_addr" {
-  description = "Optional assigned IPv6 base address for multicast groups"
+variable "mc_group_id" {
+  description = "IANA group-id (bytes 12-13 of the IPv6 multicast address); default 0x000B = IANA Bitcoin allocation FF0X::B"
   type        = string
-  default     = ""
+  default     = "0x000B"
 }
 
 variable "mc_route_prefix" {

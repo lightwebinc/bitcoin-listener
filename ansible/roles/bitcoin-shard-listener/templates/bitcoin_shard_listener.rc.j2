@@ -39,7 +39,7 @@ bitcoin_shard_listener_prestart()
     if [ -f "${bitcoin_shard_listener_config}" ]; then
         . "${bitcoin_shard_listener_config}"
     fi
-    export MULTICAST_IF LISTEN_PORT SHARD_BITS MC_SCOPE MC_BASE_ADDR
+    export MULTICAST_IF LISTEN_PORT SHARD_BITS MC_SCOPE MC_GROUP_ID
     export SHARD_INCLUDE SUBTREE_INCLUDE SUBTREE_EXCLUDE
     export EGRESS_ADDR EGRESS_PROTO STRIP_HEADER
     export RETRY_ENDPOINTS NACK_JITTER_MAX NACK_BACKOFF_MAX NACK_MAX_RETRIES NACK_GAP_TTL

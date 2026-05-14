@@ -71,7 +71,7 @@ Variables:
 | `global` | `ff0e::/16` |
 
 Override `mc_route_prefix` when using an assigned narrower prefix (in
-conjunction with `mc_base_addr`).
+conjunction with `mc_group_id`).
 
 ## BGP VIP
 
