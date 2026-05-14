@@ -26,7 +26,7 @@ locals {
       listen_port      = tostring(var.listen_port)
       shard_bits       = tostring(var.shard_bits)
       mc_scope         = var.mc_scope
-      mc_group_id     = var.mc_group_id
+      mc_group_id      = var.mc_group_id
       mc_route_prefix  = var.mc_route_prefix
       shard_include    = var.shard_include
       subtree_include  = var.subtree_include
