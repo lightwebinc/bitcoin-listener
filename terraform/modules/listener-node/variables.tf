@@ -10,80 +10,74 @@ variable "ansible_playbook_path" {
   default     = ""
 }
 
-variable "host_ip" {
-  description = "Public IP address of the target host"
+variable "bgp_daemon" {
+  description = "BGP daemon: bird2 or frr"
   type        = string
+  default     = "bird2"
+
+  validation {
+    condition     = contains(["bird2", "frr"], var.bgp_daemon)
+    error_message = "bgp_daemon must be 'bird2' or 'frr'."
+  }
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to the SSH private key file"
-  type        = string
-}
-
-variable "ssh_user" {
-  description = "SSH username for the target host"
-  type        = string
-  default     = "ubuntu"
-}
-
-# Listener source
-variable "listener_repo" {
-  description = "Git URL of the bitcoin-shard-listener repository"
-  type        = string
-  default     = "https://github.com/lightwebinc/bitcoin-shard-listener.git"
-}
-
-variable "listener_version" {
-  description = "Git ref (branch, tag, or SHA) to check out"
-  type        = string
-  default     = "main"
-}
-
-# Listener runtime
-variable "listen_port" {
-  description = "UDP port for incoming multicast frames"
+variable "bgp_local_as" {
+  description = "Local BGP ASN (listener default 65002)"
   type        = number
-  default     = 9001
+  default     = 65002
 }
 
-variable "shard_bits" {
-  description = "Shard bit width (1-24); must match proxy"
+variable "bgp_password" {
+  description = "Optional MD5 BGP session password"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "bgp_peer_as" {
+  description = "Upstream provider BGP ASN"
   type        = number
-  default     = 2
+  default     = 65000
 }
 
-variable "mc_scope" {
-  description = "Multicast scope: link, site, org, or global"
-  type        = string
-  default     = "site"
-}
-
-variable "mc_group_id" {
-  description = "IANA group-id (bytes 12-13 of the IPv6 multicast address); default 0x000B = IANA Bitcoin allocation FF0X::B"
-  type        = string
-  default     = "0x000B"
-}
-
-variable "mc_route_prefix" {
-  description = "IPv6 multicast route prefix for the ingress interface (empty = auto-derive from mc_scope)"
+variable "bgp_peer_ip" {
+  description = "Upstream BGP peer IPv4 address"
   type        = string
   default     = ""
 }
 
-variable "shard_include" {
-  description = "Comma-separated shard indices to subscribe, e.g. \"0,1\" (empty = all 2^shard_bits groups; strongly recommend setting this explicitly in production)"
+variable "bgp_peer_ip6" {
+  description = "Upstream BGP peer IPv6 address"
   type        = string
   default     = ""
 }
 
-variable "subtree_include" {
-  description = "Comma-separated hex subtree IDs to allow (V2 only; empty = all)"
+variable "bgp_prefix" {
+  description = "IPv4 prefixes advertised into the fabric"
+  type        = list(string)
+  default     = []
+}
+
+variable "bgp_prefix6" {
+  description = "IPv6 prefixes advertised into the fabric"
+  type        = list(string)
+  default     = []
+}
+
+variable "bgp_router_id" {
+  description = "BGP router ID (defaults to host_ip)"
   type        = string
   default     = ""
 }
 
-variable "subtree_exclude" {
-  description = "Comma-separated hex subtree IDs to drop (V2 only; empty = none)"
+variable "bgp_vip" {
+  description = "IPv4 loopback VIP — this listener's unicast identity"
+  type        = string
+  default     = ""
+}
+
+variable "bgp_vip6" {
+  description = "IPv6 loopback VIP — this listener's unicast identity"
   type        = string
   default     = ""
 }
@@ -105,61 +99,47 @@ variable "egress_proto" {
   }
 }
 
-variable "strip_header" {
-  description = "Send payload-only datagrams (drop frame header)"
+variable "enable_bgp" {
+  description = "Enable eBGP"
   type        = bool
   default     = false
 }
 
-variable "retry_endpoints" {
-  description = "Comma-separated host:port retry nodes for NACK dispatch"
+variable "enable_firewall" {
+  description = "Enable nftables/pf perimeter rules (default on for security)"
+  type        = bool
+  default     = true
+}
+
+variable "extra_ansible_vars" {
+  description = "Additional Ansible variables to pass as --extra-vars"
+  type        = map(any)
+  default     = {}
+}
+
+variable "gre_inner_ipv6" {
+  description = "IPv6 address/prefix assigned to the tunnel interface"
   type        = string
   default     = ""
 }
 
-variable "nack_jitter_max" {
-  description = "Max NACK suppression jitter (Go duration)"
-  type        = string
-  default     = "200ms"
-}
-
-variable "nack_backoff_max" {
-  description = "Max NACK backoff per gap (Go duration)"
-  type        = string
-  default     = "5s"
-}
-
-variable "nack_max_retries" {
-  description = "Max NACK attempts per gap"
-  type        = number
-  default     = 5
-}
-
-variable "nack_gap_ttl" {
-  description = "Max gap entry lifetime (Go duration)"
-  type        = string
-  default     = "10m"
-}
-
-variable "metrics_addr" {
-  description = "HTTP bind address for /metrics, /healthz, /readyz"
-  type        = string
-  default     = ":9200"
-}
-
-variable "otlp_endpoint" {
-  description = "OTLP gRPC endpoint for metric push (empty = disabled)"
+variable "gre_local_ip6" {
+  description = "Local IPv6 address for the ip6gre tunnel endpoint (ingress_mode=gre only)"
   type        = string
   default     = ""
 }
 
-variable "otlp_interval" {
-  description = "OTLP metric export interval (Go duration)"
+variable "gre_remote_ip6" {
+  description = "Remote IPv6 address for the ip6gre tunnel endpoint (ingress_mode=gre only)"
   type        = string
-  default     = "30s"
+  default     = ""
 }
 
-# Networking (ingress / multicast-receive side)
+variable "host_ip" {
+  description = "Public IP address of the target host"
+  type        = string
+}
+
 variable "ingress_iface" {
   description = "Multicast ingress interface (per host). For GRE mode use gre_iface (default 'gre6-bsl')."
   type        = string
@@ -177,29 +157,46 @@ variable "ingress_mode" {
   }
 }
 
-variable "gre_local_ip6" {
-  description = "Local IPv6 address for the ip6gre tunnel endpoint (ingress_mode=gre only)"
+variable "listen_port" {
+  description = "UDP port for incoming multicast frames"
+  type        = number
+  default     = 9001
+}
+
+variable "listener_repo" {
+  description = "Git URL of the bitcoin-shard-listener repository"
+  type        = string
+  default     = "https://github.com/lightwebinc/bitcoin-shard-listener.git"
+}
+
+variable "listener_version" {
+  description = "Git ref (branch, tag, or SHA) to check out"
+  type        = string
+  default     = "main"
+}
+
+variable "mc_group_id" {
+  description = "IANA group-id (bytes 12-13 of the IPv6 multicast address); default 0x000B = IANA Bitcoin allocation FF0X::B"
+  type        = string
+  default     = "0x000B"
+}
+
+variable "mc_route_prefix" {
+  description = "IPv6 multicast route prefix for the ingress interface (empty = auto-derive from mc_scope)"
   type        = string
   default     = ""
 }
 
-variable "gre_remote_ip6" {
-  description = "Remote IPv6 address for the ip6gre tunnel endpoint (ingress_mode=gre only)"
+variable "mc_scope" {
+  description = "Multicast scope: link, site, org, or global"
   type        = string
-  default     = ""
+  default     = "site"
 }
 
-variable "gre_inner_ipv6" {
-  description = "IPv6 address/prefix assigned to the tunnel interface"
+variable "metrics_addr" {
+  description = "HTTP bind address for /metrics, /healthz, /readyz"
   type        = string
-  default     = ""
-}
-
-# Firewall (multicast-fabric perimeter)
-variable "enable_firewall" {
-  description = "Enable nftables/pf perimeter rules (default on for security)"
-  type        = bool
-  default     = true
+  default     = ":9200"
 }
 
 variable "mgmt_cidrs_v4" {
@@ -214,88 +211,85 @@ variable "mgmt_cidrs_v6" {
   default     = []
 }
 
-# BGP (optional) — advertises this listener's unicast prefix into the fabric
-# so MLD/PIM can build multicast distribution trees toward it.
-variable "enable_bgp" {
-  description = "Enable eBGP"
+variable "nack_backoff_max" {
+  description = "Max NACK backoff per gap (Go duration)"
+  type        = string
+  default     = "5s"
+}
+
+variable "nack_gap_ttl" {
+  description = "Max gap entry lifetime (Go duration)"
+  type        = string
+  default     = "10m"
+}
+
+variable "nack_jitter_max" {
+  description = "Max NACK suppression jitter (Go duration)"
+  type        = string
+  default     = "200ms"
+}
+
+variable "nack_max_retries" {
+  description = "Max NACK attempts per gap"
+  type        = number
+  default     = 5
+}
+
+variable "otlp_endpoint" {
+  description = "OTLP gRPC endpoint for metric push (empty = disabled)"
+  type        = string
+  default     = ""
+}
+
+variable "otlp_interval" {
+  description = "OTLP metric export interval (Go duration)"
+  type        = string
+  default     = "30s"
+}
+
+variable "retry_endpoints" {
+  description = "Comma-separated host:port retry nodes for NACK dispatch"
+  type        = string
+  default     = ""
+}
+
+variable "shard_bits" {
+  description = "Shard bit width (1-24); must match proxy"
+  type        = number
+  default     = 2
+}
+
+variable "shard_include" {
+  description = "Comma-separated shard indices to subscribe, e.g. \"0,1\" (empty = all 2^shard_bits groups; strongly recommend setting this explicitly in production)"
+  type        = string
+  default     = ""
+}
+
+variable "ssh_private_key_path" {
+  description = "Path to the SSH private key file"
+  type        = string
+}
+
+variable "ssh_user" {
+  description = "SSH username for the target host"
+  type        = string
+  default     = "ubuntu"
+}
+
+variable "strip_header" {
+  description = "Send payload-only datagrams (drop frame header)"
   type        = bool
   default     = false
 }
 
-variable "bgp_daemon" {
-  description = "BGP daemon: bird2 or frr"
-  type        = string
-  default     = "bird2"
-
-  validation {
-    condition     = contains(["bird2", "frr"], var.bgp_daemon)
-    error_message = "bgp_daemon must be 'bird2' or 'frr'."
-  }
-}
-
-variable "bgp_prefix" {
-  description = "IPv4 prefixes advertised into the fabric"
-  type        = list(string)
-  default     = []
-}
-
-variable "bgp_prefix6" {
-  description = "IPv6 prefixes advertised into the fabric"
-  type        = list(string)
-  default     = []
-}
-
-variable "bgp_vip" {
-  description = "IPv4 loopback VIP — this listener's unicast identity"
+variable "subtree_exclude" {
+  description = "Comma-separated hex subtree IDs to drop (V2 only; empty = none)"
   type        = string
   default     = ""
 }
 
-variable "bgp_vip6" {
-  description = "IPv6 loopback VIP — this listener's unicast identity"
+variable "subtree_include" {
+  description = "Comma-separated hex subtree IDs to allow (V2 only; empty = all)"
   type        = string
   default     = ""
-}
-
-variable "bgp_local_as" {
-  description = "Local BGP ASN (listener default 65002)"
-  type        = number
-  default     = 65002
-}
-
-variable "bgp_peer_as" {
-  description = "Upstream provider BGP ASN"
-  type        = number
-  default     = 65000
-}
-
-variable "bgp_peer_ip" {
-  description = "Upstream BGP peer IPv4 address"
-  type        = string
-  default     = ""
-}
-
-variable "bgp_peer_ip6" {
-  description = "Upstream BGP peer IPv6 address"
-  type        = string
-  default     = ""
-}
-
-variable "bgp_router_id" {
-  description = "BGP router ID (defaults to host_ip)"
-  type        = string
-  default     = ""
-}
-
-variable "bgp_password" {
-  description = "Optional MD5 BGP session password"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "extra_ansible_vars" {
-  description = "Additional Ansible variables to pass as --extra-vars"
-  type        = map(any)
-  default     = {}
 }

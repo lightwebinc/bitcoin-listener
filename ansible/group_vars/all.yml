@@ -15,7 +15,7 @@ listener_user: "bitcoin-listener"
 listener_group: "bitcoin-listener"
 
 # Go toolchain version (used when building from source)
-go_version: "1.24.5"
+go_version: "1.25.10"
 go_install_dir: "/usr/local/go"
 
 # ------------------------------------------------------------
@@ -71,7 +71,7 @@ mc_egress_enabled: false
 mc_egress_iface: ""
 mc_egress_port: 0
 mc_egress_scope: ""
-mc_egress_base_addr: ""
+mc_egress_group_id: ""
 mc_egress_hoplimit: 1
 
 # ------------------------------------------------------------
