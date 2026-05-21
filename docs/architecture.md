@@ -26,12 +26,15 @@ them via multicast egress for domain bridging.
 
 ## Protocol details
 
-Frame formats, filtering, gap tracking, NACK/retransmission, and beacon
-discovery are documented in the service and project repos:
+Deploys `bitcoin-shard-listener`, which receives BRC-124/BRC-128 transaction frames,
+BRC-130 fragments, BRC-131 block control, BRC-132 subtree data, and BRC-134 anchor frames
+on the multicast fabric. Frame formats, filtering, gap tracking, NACK/retransmission, and
+beacon discovery are documented in the service and project repos:
 
 - [bitcoin-shard-listener — Architecture](https://github.com/lightwebinc/bitcoin-shard-listener/blob/main/docs/architecture.md)
 - [bitcoin-shard-listener — Configuration](https://github.com/lightwebinc/bitcoin-shard-listener/blob/main/docs/configuration.md)
 - [bitcoin-multicast — DESIGN.md](https://github.com/lightwebinc/bitcoin-multicast/blob/main/DESIGN.md)
+- BRC drafts: `bitcoin-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135}-*.md`
 
 ## Data plane
 
