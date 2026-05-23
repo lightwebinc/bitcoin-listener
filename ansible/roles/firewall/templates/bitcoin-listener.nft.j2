@@ -169,6 +169,11 @@ table inet bitcoin-listener {
         oifname != "{{ firewall_fabric_iface }}" udp dport { 53, 123 } accept
         oifname != "{{ firewall_fabric_iface }}" tcp dport { 53, 80, 443 } accept
 
+{% if txid_dedup_addr | default('') | length > 0 %}
+        # TxID dedup Redis — outbound TCP to {{ txid_dedup_addr }} on management interface
+        oifname != "{{ firewall_fabric_iface }}" tcp dport {{ txid_dedup_addr.split(':') | last }} accept
+{% endif %}
+
         counter drop
     }
 
