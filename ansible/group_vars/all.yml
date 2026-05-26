@@ -74,6 +74,24 @@ mc_egress_scope: ""
 mc_egress_group_id: ""
 mc_egress_hoplimit: 1
 
+# Per-deployment egress TxID dedup.
+# HA siblings share deployment_id; distinct deployment_ids race independently.
+# Empty deployment_id/node_id → derived from hostname at runtime.
+deployment_id: ""
+node_id: ""
+egress_dedup_redis_addr: ""       # Redis addr; empty = local-only
+egress_dedup_prefix: "bsl:egr:"  # Redis key prefix (per-deployment namespace)
+egress_dedup_ttl_redis: "60s"     # Redis entry TTL
+egress_dedup_local_cap: 1048576   # tier-1 LRU capacity; 0 = disable egress dedup
+
+# Courtesy ingress mark: SETNX into the proxy's ingress namespace so the proxy
+# knows a TxID is already on the network. Leave ingress_set_redis_addr empty to
+# disable. prefix MUST match proxy's txid_dedup_prefix.
+ingress_set_redis_addr: ""        # Redis addr (same instance as proxy's dedup Redis)
+ingress_set_prefix: "bsp:tx:"    # Must match proxy's txid_dedup_prefix
+ingress_set_ttl: "10m"
+ingress_set_local_cap: 1048576
+
 # ------------------------------------------------------------
 # Firewall perimeter (multicast-fabric isolation)
 # Default ON; set false for labs where broader connectivity is desired.
