@@ -93,7 +93,7 @@ resource "aws_route_table_association" "public" {
 # ---------------------------------------------------------------
 resource "aws_security_group" "listener_node" {
   name        = "${var.name_prefix}-listener-node"
-  description = "bitcoin-listener node"
+  description = "shard-listener node"
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.common_tags, { Name = "${var.name_prefix}-sg" })
@@ -232,7 +232,7 @@ resource "aws_eip_association" "listener_node" {
 
 locals {
   common_tags = {
-    Project     = "bitcoin-listener"
+    Project     = "shard-listener"
     ManagedBy   = "terraform"
     Environment = var.environment
   }

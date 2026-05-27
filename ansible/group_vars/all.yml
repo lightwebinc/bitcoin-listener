@@ -1,18 +1,18 @@
 ---
 # ============================================================
-# bitcoin-listener Ansible group_vars/all.yml
+# shard-listener Ansible group_vars/all.yml
 # Override any variable per-host in inventory/hosts.yml
 # ============================================================
 
 # ------------------------------------------------------------
-# bitcoin-shard-listener source and build
+# shard-listener source and build
 # ------------------------------------------------------------
-listener_repo: "https://github.com/lightwebinc/bitcoin-shard-listener.git"
+listener_repo: "https://github.com/lightwebinc/shard-listener.git"
 listener_version: "main"
-listener_install_dir: "/opt/bitcoin-shard-listener"
+listener_install_dir: "/opt/shard-listener"
 listener_bin_dir: "/usr/local/bin"
-listener_user: "bitcoin-listener"
-listener_group: "bitcoin-listener"
+listener_user: "shard-listener"
+listener_group: "shard-listener"
 
 # Go toolchain version (used when building from source)
 go_version: "1.25.10"

@@ -27,7 +27,7 @@
   # gif(4) supports both IPv4 and IPv6 outer transport; inner is always IPv6.
   ansible.builtin.blockinfile:
     path: /etc/rc.conf
-    marker: "# {mark} bitcoin-listener GRE tunnel"
+    marker: "# {mark} shard-listener GRE tunnel"
     block: |
       {% set tun = (gre_outer_proto == 'ipv4')
                    | ternary(gre_local_ip4 ~ ' ' ~ gre_remote_ip4,

@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# PROVIDE: shard_listener
+# REQUIRE: NETWORKING DAEMON
+# KEYWORD: shutdown
+#
+# Managed by Ansible — do not edit manually
+#
+# Add the following to /etc/rc.conf to enable:
+#   shard_listener_enable="YES"
+
+. /etc/rc.subr
+
+name="shard_listener"
+rcvar="shard_listener_enable"
+desc="Bitcoin Shard Listener"
+
+load_rc_config "${name}"
+
+: ${shard_listener_enable:="NO"}
+: ${shard_listener_user:="{{ listener_user }}"}
+: ${shard_listener_group:="{{ listener_group }}"}
+: ${shard_listener_config:="/usr/local/etc/shard-listener.conf"}
+: ${shard_listener_logfile:="/var/log/shard_listener.log"}
+: ${shard_listener_pidfile:="/var/run/shard_listener.pid"}
+
+pidfile="${shard_listener_pidfile}"
+command="{{ listener_bin_dir }}/shard-listener"
+command_args=""
+
+start_precmd="shard_listener_prestart"
+start_cmd="shard_listener_start"
+stop_cmd="shard_listener_stop"
+status_cmd="shard_listener_status"
+
+shard_listener_prestart()
+{
+    # Load environment from config file
+    if [ -f "${shard_listener_config}" ]; then
+        . "${shard_listener_config}"
+    fi
+    export MULTICAST_IF LISTEN_PORT SHARD_BITS MC_SCOPE MC_GROUP_ID
+    export SHARD_INCLUDE SUBTREE_INCLUDE SUBTREE_EXCLUDE
+    export EGRESS_ADDR EGRESS_PROTO STRIP_HEADER
+    export RETRY_ENDPOINTS NACK_JITTER_MAX NACK_BACKOFF_MAX NACK_MAX_RETRIES NACK_GAP_TTL
+    export NUM_WORKERS METRICS_ADDR OTLP_ENDPOINT OTLP_INTERVAL
+    export DRAIN_TIMEOUT INSTANCE_ID DEBUG
+
+    # Receive-side: no multicast route needed (MLD group joins handle reception).
+}
+
+shard_listener_start()
+{
+    shard_listener_prestart
+    /usr/sbin/daemon -f -p "${pidfile}" -u "${shard_listener_user}" \
+        ${command} >> "${shard_listener_logfile}" 2>&1
+    echo "shard_listener started."
+}
+
+shard_listener_stop()
+{
+    if [ -f "${pidfile}" ]; then
+        kill -TERM $(cat "${pidfile}") && rm -f "${pidfile}"
+        echo "shard_listener stopped."
+    else
+        echo "shard_listener is not running."
+    fi
+}
+
+shard_listener_status()
+{
+    if [ -f "${pidfile}" ] && kill -0 $(cat "${pidfile}") 2>/dev/null; then
+        echo "shard_listener is running (pid $(cat ${pidfile}))."
+    else
+        echo "shard_listener is not running."
+        return 1
+    fi
+}
+
+run_rc_command "$1"

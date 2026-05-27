@@ -86,7 +86,7 @@ jobs:
               - /tmp/nft-check/vars.yml
             tasks:
               - template:
-                  src: ${GITHUB_WORKSPACE}/ansible/roles/firewall/templates/bitcoin-listener.nft.j2
+                  src: ${GITHUB_WORKSPACE}/ansible/roles/firewall/templates/shard-listener.nft.j2
                   dest: /tmp/nft-check/rendered.nft
           EOF
           ansible-playbook /tmp/nft-check/render.yml

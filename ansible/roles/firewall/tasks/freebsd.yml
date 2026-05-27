@@ -8,24 +8,24 @@
     - { regexp: '^pf_enable=', line: 'pf_enable="YES"' }
     - { regexp: '^pflog_enable=', line: 'pflog_enable="YES"' }
 
-- name: Deploy bitcoin-listener pf ruleset fragment
+- name: Deploy shard-listener pf ruleset fragment
   ansible.builtin.template:
-    src: bitcoin-listener.pf.conf.j2
-    dest: /etc/pf.anchors/bitcoin-listener
+    src: shard-listener.pf.conf.j2
+    dest: /etc/pf.anchors/shard-listener
     owner: root
     group: wheel
     mode: "0644"
   notify: Reload pf
 
-- name: Ensure /etc/pf.conf references the bitcoin-listener anchor
+- name: Ensure /etc/pf.conf references the shard-listener anchor
   ansible.builtin.blockinfile:
     path: /etc/pf.conf
     create: true
     mode: "0644"
-    marker: "# {mark} bitcoin-listener anchor"
+    marker: "# {mark} shard-listener anchor"
     block: |
-      anchor "bitcoin-listener"
-      load anchor "bitcoin-listener" from "/etc/pf.anchors/bitcoin-listener"
+      anchor "shard-listener"
+      load anchor "shard-listener" from "/etc/pf.anchors/shard-listener"
   notify: Reload pf
 
 - name: Enable pf service (FreeBSD)

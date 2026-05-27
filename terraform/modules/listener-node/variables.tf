@@ -164,9 +164,9 @@ variable "listen_port" {
 }
 
 variable "listener_repo" {
-  description = "Git URL of the bitcoin-shard-listener repository"
+  description = "Git URL of the shard-listener repository"
   type        = string
-  default     = "https://github.com/lightwebinc/bitcoin-shard-listener.git"
+  default     = "https://github.com/lightwebinc/shard-listener.git"
 }
 
 variable "listener_version" {

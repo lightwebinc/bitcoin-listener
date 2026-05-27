@@ -18,11 +18,11 @@ is only reachable over the IPv4 Internet.
 The listener joins IPv6 multicast groups directly on `ingress_iface`.
 Deploys:
 
-- `/etc/netplan/60-bitcoin-listener.yaml` — IPv6 on the ingress iface
+- `/etc/netplan/60-shard-listener.yaml` — IPv6 on the ingress iface
   (DHCPv4 optional via `ingress_dhcp4`, defaults to `true` so a single-NIC
   host can still reach mgmt over v4; set `false` on multi-NIC or lab hosts
   where the ingress iface is dedicated to the fabric).
-- `/etc/sysctl.d/60-bitcoin-listener.conf` — `accept_ra` settings to allow
+- `/etc/sysctl.d/60-shard-listener.conf` — `accept_ra` settings to allow
   IPv6 autoconf.
 
 No `ip -6 route add ff00::/8` is needed on the receive side: MLD joins
@@ -42,7 +42,7 @@ IPv4 or IPv6 — controlled by `gre_outer_proto`:
 
 Deploys:
 
-- `/etc/netplan/61-bitcoin-listener-gre.yaml` — tunnel definition +
+- `/etc/netplan/61-shard-listener-gre.yaml` — tunnel definition +
   multicast route on the tunnel.
 - When using this mode, set `ingress_iface: gre6-bsl` on each host so the
   listener joins groups on the tunnel interface.
@@ -78,7 +78,7 @@ conjunction with `mc_group_id`).
 When `enable_bgp: true` and `bgp_vip` / `bgp_vip6` is set, a third netplan
 file is deployed:
 
-- `/etc/netplan/62-bitcoin-listener-vip.yaml` — VIP on loopback (`lo`).
+- `/etc/netplan/62-shard-listener-vip.yaml` — VIP on loopback (`lo`).
 
 The VIP is this listener's unicast identity inside the fabric.
 

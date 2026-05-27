@@ -3,28 +3,28 @@
 ## Service management
 
 ```sh
-systemctl status bitcoin-shard-listener
-systemctl restart bitcoin-shard-listener
-journalctl -u bitcoin-shard-listener -f
+systemctl status shard-listener
+systemctl restart shard-listener
+journalctl -u shard-listener -f
 
 # BGP health-check timer (when enable_bgp: true)
 systemctl status bsl-bgp-check.timer
 journalctl -u bsl-bgp-check.service --since -5min
 ```
 
-Unit file: `/etc/systemd/system/bitcoin-shard-listener.service`
-(see template `ansible/roles/bitcoin-shard-listener/templates/bitcoin-shard-listener.service.j2`).
+Unit file: `/etc/systemd/system/shard-listener.service`
+(see template `ansible/roles/shard-listener/templates/shard-listener.service.j2`).
 
-Environment file: `/etc/bitcoin-shard-listener/config.env`.
+Environment file: `/etc/shard-listener/config.env`.
 
 ## Network configuration
 
 Netplan:
 
-- `/etc/netplan/60-bitcoin-listener.yaml` — ingress ethernet
-- `/etc/netplan/61-bitcoin-listener-gre.yaml` — GRE6 tunnel (when
+- `/etc/netplan/60-shard-listener.yaml` — ingress ethernet
+- `/etc/netplan/61-shard-listener-gre.yaml` — GRE6 tunnel (when
   `ingress_mode: gre`)
-- `/etc/netplan/62-bitcoin-listener-vip.yaml` — BGP VIP on loopback
+- `/etc/netplan/62-shard-listener-vip.yaml` — BGP VIP on loopback
 
 Apply:
 
@@ -32,15 +32,15 @@ Apply:
 netplan apply
 ```
 
-Sysctl: `/etc/sysctl.d/60-bitcoin-listener.conf`.
+Sysctl: `/etc/sysctl.d/60-shard-listener.conf`.
 
 ## Firewall
 
-nftables ruleset: `/etc/nftables.d/60-bitcoin-listener.nft` (included from
+nftables ruleset: `/etc/nftables.d/60-shard-listener.nft` (included from
 `/etc/nftables.conf`).
 
 ```sh
-nft list table inet bitcoin-listener
+nft list table inet shard-listener
 systemctl status nftables
 ```
 

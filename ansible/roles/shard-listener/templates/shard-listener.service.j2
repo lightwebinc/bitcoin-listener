@@ -1,6 +1,6 @@
 [Unit]
 Description=Bitcoin Shard Listener
-Documentation=https://github.com/lightwebinc/bitcoin-shard-listener
+Documentation=https://github.com/lightwebinc/shard-listener
 After=network-online.target
 Wants=network-online.target
 {% if enable_bgp | bool %}
@@ -15,8 +15,8 @@ Before=frr.service
 Type=simple
 User={{ listener_user }}
 Group={{ listener_group }}
-EnvironmentFile=/etc/bitcoin-shard-listener/config.env
-ExecStart={{ listener_bin_dir }}/bitcoin-shard-listener
+EnvironmentFile=/etc/shard-listener/config.env
+ExecStart={{ listener_bin_dir }}/shard-listener
 {% if enable_bgp | bool %}
 ExecStop=/usr/local/bin/bsl-bgp-withdraw.sh
 {% endif %}

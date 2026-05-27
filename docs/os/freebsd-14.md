@@ -3,20 +3,20 @@
 ## Service management
 
 ```sh
-service bitcoin_shard_listener status
-service bitcoin_shard_listener restart
-tail -f /var/log/bitcoin_shard_listener.log
+service shard_listener status
+service shard_listener restart
+tail -f /var/log/shard_listener.log
 ```
 
-rc.d script: `/usr/local/etc/rc.d/bitcoin_shard_listener`
-(see template `ansible/roles/bitcoin-shard-listener/templates/bitcoin_shard_listener.rc.j2`).
+rc.d script: `/usr/local/etc/rc.d/shard_listener`
+(see template `ansible/roles/shard-listener/templates/shard_listener.rc.j2`).
 
-Environment file: `/usr/local/etc/bitcoin-shard-listener.conf`.
+Environment file: `/usr/local/etc/shard-listener.conf`.
 
 Enable at boot:
 
 ```sh
-sysrc bitcoin_shard_listener_enable=YES
+sysrc shard_listener_enable=YES
 ```
 
 ## Network configuration
@@ -37,12 +37,12 @@ service routing restart
 
 ## Firewall (pf)
 
-Anchor file: `/etc/pf.anchors/bitcoin-listener`, loaded from `/etc/pf.conf`
+Anchor file: `/etc/pf.anchors/shard-listener`, loaded from `/etc/pf.conf`
 via a managed anchor block.
 
 ```sh
 pfctl -sr
-pfctl -a bitcoin-listener -sr
+pfctl -a shard-listener -sr
 pfctl -f /etc/pf.conf
 ```
 

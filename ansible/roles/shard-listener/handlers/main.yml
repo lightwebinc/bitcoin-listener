@@ -4,7 +4,7 @@
     daemon_reload: true
   when: ansible_os_family != 'FreeBSD'
 
-- name: Restart bitcoin-shard-listener
+- name: Restart shard-listener
   ansible.builtin.service:
-    name: "{{ 'bitcoin-shard-listener' if ansible_os_family != 'FreeBSD' else 'bitcoin_shard_listener' }}"
+    name: "{{ 'shard-listener' if ansible_os_family != 'FreeBSD' else 'shard_listener' }}"
     state: restarted

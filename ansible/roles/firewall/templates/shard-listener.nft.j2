@@ -1,4 +1,4 @@
-# nftables ruleset for bitcoin-listener
+# nftables ruleset for shard-listener
 # Managed by Ansible — do not edit manually
 #
 # Perimeter model:
@@ -6,7 +6,7 @@
 #   * Non-fabric interfaces: management + downstream egress to {{ firewall_egress_host }}
 #   * Forwarding: disabled
 
-table inet bitcoin-listener {
+table inet shard-listener {
 
     # ------------------------------------------------------------
     # Named sets

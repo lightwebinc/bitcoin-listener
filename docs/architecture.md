@@ -1,7 +1,7 @@
 # Architecture
 
-`bitcoin-listener` is the deployment/operations repo for
-[`bitcoin-shard-listener`](https://github.com/lightwebinc/bitcoin-shard-listener) — the
+`shard-listener` is the deployment/operations repo for
+[`shard-listener`](https://github.com/lightwebinc/shard-listener) — the
 inverse side of the `bitcoin-ingress` / `bitcoin-shard-proxy` pipeline. Where
 the ingress proxy _sends_ sharded transaction frames into an IPv6 multicast
 fabric, the listener _receives_ those frames, filters by shard / subtree, and
@@ -26,13 +26,13 @@ them via multicast egress for domain bridging.
 
 ## Protocol details
 
-Deploys `bitcoin-shard-listener`, which receives BRC-124/BRC-128 transaction frames,
+Deploys `shard-listener`, which receives BRC-124/BRC-128 transaction frames,
 BRC-130 fragments, BRC-131 block control, BRC-132 subtree data, and BRC-134 anchor frames
 on the multicast fabric. Frame formats, filtering, gap tracking, NACK/retransmission, and
 beacon discovery are documented in the service and project repos:
 
-- [bitcoin-shard-listener — Architecture](https://github.com/lightwebinc/bitcoin-shard-listener/blob/main/docs/architecture.md)
-- [bitcoin-shard-listener — Configuration](https://github.com/lightwebinc/bitcoin-shard-listener/blob/main/docs/configuration.md)
+- [shard-listener — Architecture](https://github.com/lightwebinc/shard-listener/blob/main/docs/architecture.md)
+- [shard-listener — Configuration](https://github.com/lightwebinc/shard-listener/blob/main/docs/configuration.md)
 - [bitcoin-multicast — DESIGN.md](https://github.com/lightwebinc/bitcoin-multicast/blob/main/DESIGN.md)
 - BRC drafts: `bitcoin-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135}-*.md`
 
@@ -90,7 +90,7 @@ the socket in the first place.
 
 ## Relationship to `bitcoin-ingress`
 
-| Concern                                       | `bitcoin-ingress` (proxy) | `bitcoin-listener` (this repo)    |
+| Concern                                       | `bitcoin-ingress` (proxy) | `shard-listener` (this repo)    |
 | --------------------------------------------- | ------------------------- | --------------------------------- |
 | Direction                                     | TX onto fabric            | RX from fabric                    |
 | Primary iface                                 | `egress_iface` (send)     | `ingress_iface` (receive)         |

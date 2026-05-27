@@ -1,15 +1,15 @@
-# bitcoin-listener
+# shard-listener
 
-[![Lint](https://github.com/lightwebinc/bitcoin-listener/actions/workflows/lint.yml/badge.svg)](https://github.com/lightwebinc/bitcoin-listener/actions/workflows/lint.yml)
+[![Lint](https://github.com/lightwebinc/listener-infra/actions/workflows/lint.yml/badge.svg)](https://github.com/lightwebinc/listener-infra/actions/workflows/lint.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Ansible and Terraform automation for deploying
-[`bitcoin-shard-listener`](https://github.com/lightwebinc/bitcoin-shard-listener)
+[`shard-listener`](https://github.com/lightwebinc/shard-listener)
 nodes — multicast subscribers that filter and forward BSV transactions to
 downstream consumers.
 
 ```text
-FF05::<shard>:9001  ──multicast──▶  bitcoin-shard-listener  ──UDP/TCP──▶  consumer
+FF05::<shard>:9001  ──multicast──▶  shard-listener  ──UDP/TCP──▶  consumer
                                     (this repo deploys)
 ```
 

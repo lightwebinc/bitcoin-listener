@@ -29,7 +29,7 @@
     scope: global
     value: "{{ listener_install_dir }}"
 
-- name: Clone / update bitcoin-shard-listener repository
+- name: Clone / update shard-listener repository
   ansible.builtin.git:
     repo: "{{ listener_repo }}"
     dest: "{{ listener_install_dir }}"
@@ -40,7 +40,7 @@
 - name: Push pre-built listener binary (skips git/build)
   ansible.builtin.copy:
     src: "{{ listener_local_binary }}"
-    dest: "{{ listener_install_dir }}/bitcoin-shard-listener"
+    dest: "{{ listener_install_dir }}/shard-listener"
     owner: "{{ listener_user }}"
     group: "{{ listener_group }}"
     mode: "0755"
@@ -56,13 +56,13 @@
 
 - name: Stat existing listener binary in install dir
   ansible.builtin.stat:
-    path: "{{ listener_install_dir }}/bitcoin-shard-listener"
+    path: "{{ listener_install_dir }}/shard-listener"
   register: listener_binary_stat
   when: listener_local_binary | default('') | length == 0
 
-- name: Build bitcoin-shard-listener binary
+- name: Build shard-listener binary
   ansible.builtin.command:
-    cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -o {{ listener_install_dir }}/bitcoin-shard-listener ."
+    cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -o {{ listener_install_dir }}/shard-listener ."
     chdir: "{{ listener_install_dir }}"
   environment:
     PATH: "{{ go_install_dir }}/bin:{{ ansible_env.PATH }}"
@@ -79,24 +79,24 @@
 
 - name: Set ownership on pushed/built binary
   ansible.builtin.file:
-    path: "{{ listener_install_dir }}/bitcoin-shard-listener"
+    path: "{{ listener_install_dir }}/shard-listener"
     owner: "{{ listener_user }}"
     group: "{{ listener_group }}"
     mode: "0755"
 
 - name: Install binary to system bin dir
   ansible.builtin.copy:
-    src: "{{ listener_install_dir }}/bitcoin-shard-listener"
-    dest: "{{ listener_bin_dir }}/bitcoin-shard-listener"
+    src: "{{ listener_install_dir }}/shard-listener"
+    dest: "{{ listener_bin_dir }}/shard-listener"
     remote_src: true
     owner: root
     group: "{{ listener_group }}"
     mode: "0755"
-  notify: Restart bitcoin-shard-listener
+  notify: Restart shard-listener
 
 - name: Create config directory
   ansible.builtin.file:
-    path: "{{ '/usr/local/etc' if ansible_os_family == 'FreeBSD' else '/etc/bitcoin-shard-listener' }}"
+    path: "{{ '/usr/local/etc' if ansible_os_family == 'FreeBSD' else '/etc/shard-listener' }}"
     state: directory
     owner: root
     group: "{{ listener_group }}"
@@ -105,50 +105,50 @@
 - name: Deploy environment config file
   ansible.builtin.template:
     src: config.env.j2
-    dest: "{{ '/usr/local/etc/bitcoin-shard-listener.conf' if ansible_os_family == 'FreeBSD' else '/etc/bitcoin-shard-listener/config.env' }}"
+    dest: "{{ '/usr/local/etc/shard-listener.conf' if ansible_os_family == 'FreeBSD' else '/etc/shard-listener/config.env' }}"
     owner: root
     group: "{{ listener_group }}"
     mode: "0640"
-  notify: Restart bitcoin-shard-listener
+  notify: Restart shard-listener
 
 - name: Deploy systemd service unit (Linux)
   ansible.builtin.template:
-    src: bitcoin-shard-listener.service.j2
-    dest: /etc/systemd/system/bitcoin-shard-listener.service
+    src: shard-listener.service.j2
+    dest: /etc/systemd/system/shard-listener.service
     owner: root
     group: root
     mode: "0644"
   when: ansible_os_family != 'FreeBSD'
   notify:
     - Reload systemd
-    - Restart bitcoin-shard-listener
+    - Restart shard-listener
 
 - name: Deploy rc.d service script (FreeBSD)
   ansible.builtin.template:
-    src: bitcoin_shard_listener.rc.j2
-    dest: /usr/local/etc/rc.d/bitcoin_shard_listener
+    src: shard_listener.rc.j2
+    dest: /usr/local/etc/rc.d/shard_listener
     owner: root
     group: wheel
     mode: "0755"
   when: ansible_os_family == 'FreeBSD'
-  notify: Restart bitcoin-shard-listener
+  notify: Restart shard-listener
 
-- name: Enable and start bitcoin-shard-listener (Linux)
+- name: Enable and start shard-listener (Linux)
   ansible.builtin.systemd:
-    name: bitcoin-shard-listener
+    name: shard-listener
     enabled: true
     state: started
   when: ansible_os_family != 'FreeBSD'
 
-- name: Enable bitcoin-shard-listener in rc.conf (FreeBSD)
+- name: Enable shard-listener in rc.conf (FreeBSD)
   ansible.builtin.lineinfile:
     path: /etc/rc.conf
-    regexp: '^bitcoin_shard_listener_enable='
-    line: 'bitcoin_shard_listener_enable="YES"'
+    regexp: '^shard_listener_enable='
+    line: 'shard_listener_enable="YES"'
   when: ansible_os_family == 'FreeBSD'
 
-- name: Start bitcoin-shard-listener (FreeBSD)
+- name: Start shard-listener (FreeBSD)
   ansible.builtin.service:
-    name: bitcoin_shard_listener
+    name: shard_listener
     state: started
   when: ansible_os_family == 'FreeBSD'

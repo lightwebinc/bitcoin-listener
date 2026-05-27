@@ -13,10 +13,10 @@
     group: root
     mode: "0755"
 
-- name: Deploy bitcoin-listener nftables ruleset
+- name: Deploy shard-listener nftables ruleset
   ansible.builtin.template:
-    src: bitcoin-listener.nft.j2
-    dest: /etc/nftables.d/60-bitcoin-listener.nft
+    src: shard-listener.nft.j2
+    dest: /etc/nftables.d/60-shard-listener.nft
     owner: root
     group: root
     mode: "0644"
@@ -28,9 +28,9 @@
     path: /etc/nftables.conf
     create: true
     mode: "0644"
-    marker: "# {mark} bitcoin-listener include"
+    marker: "# {mark} shard-listener include"
     block: |
-      include "/etc/nftables.d/60-bitcoin-listener.nft"
+      include "/etc/nftables.d/60-shard-listener.nft"
   notify: Reload nftables
 
 - name: Enable nftables at boot

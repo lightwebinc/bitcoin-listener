@@ -10,7 +10,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    sysctl_file: /etc/sysctl.d/60-bitcoin-listener.conf
+    sysctl_file: /etc/sysctl.d/60-shard-listener.conf
     reload: true
   loop:
     - { name: net.ipv6.conf.all.accept_ra, value: "1" }
@@ -19,7 +19,7 @@
 - name: Deploy netplan config for ethernet ingress
   ansible.builtin.template:
     src: netplan-ethernet.yaml.j2
-    dest: /etc/netplan/60-bitcoin-listener.yaml
+    dest: /etc/netplan/60-shard-listener.yaml
     owner: root
     group: root
     mode: "0600"
@@ -29,7 +29,7 @@
 - name: Deploy netplan config for GRE6 tunnel ingress
   ansible.builtin.template:
     src: netplan-gre.yaml.j2
-    dest: /etc/netplan/61-bitcoin-listener-gre.yaml
+    dest: /etc/netplan/61-shard-listener-gre.yaml
     owner: root
     group: root
     mode: "0600"
@@ -39,7 +39,7 @@
 - name: Deploy BGP VIP netplan config
   ansible.builtin.template:
     src: netplan-vip.yaml.j2
-    dest: /etc/netplan/62-bitcoin-listener-vip.yaml
+    dest: /etc/netplan/62-shard-listener-vip.yaml
     owner: root
     group: root
     mode: "0600"

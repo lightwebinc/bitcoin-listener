@@ -1,5 +1,5 @@
 ---
-- name: Deploy bitcoin-listener nodes
+- name: Deploy shard-listener nodes
   hosts: listener_nodes
   become: true
   gather_facts: true
@@ -8,7 +8,7 @@
     - role: common
       tags: [common]
 
-    - role: bitcoin-shard-listener
+    - role: shard-listener
       tags: [listener]
 
     - role: networking

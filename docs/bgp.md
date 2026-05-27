@@ -7,7 +7,7 @@ unicast prefix into the multicast fabric so MLD/PIM can build distribution
 trees toward the node in L3 fabrics.
 
 **NACK reply routing is not needed.** NACK is send-only
-(`bitcoin-shard-listener/nack/nack.go`); the listener uses `net.DialUDP`
+(`shard-listener/nack/nack.go`); the listener uses `net.DialUDP`
 with an ephemeral source and does not receive unicast NACK replies. The
 retry node re-multicasts missing frames, which the listener picks up on
 its normal multicast receive path.
@@ -60,7 +60,7 @@ The role installs three pieces:
 - `bsl-bgp-check.service` + `bsl-bgp-check.timer` (systemd) — runs every
   10 s after a 30 s delay on boot.
 - `/usr/local/bin/bsl-bgp-withdraw.sh` — called from
-  `bitcoin-shard-listener.service` `ExecStop=` to shut down sessions
+  `shard-listener.service` `ExecStop=` to shut down sessions
   before the listener exits.
 
 On FreeBSD the check runs as a `cron` entry (every minute); the withdraw

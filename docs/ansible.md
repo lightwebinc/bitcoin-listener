@@ -11,7 +11,7 @@ ansible/
   inventory/hosts.example.yml
   roles/
     common/                 Base OS deps + Go toolchain
-    bitcoin-shard-listener/ Build + systemd / rc.d unit + config
+    shard-listener/ Build + systemd / rc.d unit + config
     networking/             Interface / multicast route / VIP config
     firewall/               nftables (Linux) / pf (FreeBSD) perimeter
     bgp/                    BIRD2 or FRR + health-check + withdraw
@@ -33,7 +33,7 @@ ansible-playbook -i inventory/hosts.yml site.yml
 `site.yml` runs roles in this order:
 
 1. `common` — install packages, Go toolchain
-2. `bitcoin-shard-listener` — build binary, install service
+2. `shard-listener` — build binary, install service
 3. `networking` — configure `ingress_iface`, GRE, BGP VIP
 4. `firewall` *(when `enable_firewall: true`)* — lock down the fabric perimeter
 5. `bgp` *(when `enable_bgp: true`)* — BIRD2 or FRR

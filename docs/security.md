@@ -37,31 +37,31 @@ The invariant this repo enforces is:
 
 ### Linux (nftables)
 
-Ruleset template: `ansible/roles/firewall/templates/bitcoin-listener.nft.j2`.
+Ruleset template: `ansible/roles/firewall/templates/shard-listener.nft.j2`.
 
-Installed as `/etc/nftables.d/60-bitcoin-listener.nft` and sourced from
+Installed as `/etc/nftables.d/60-shard-listener.nft` and sourced from
 `/etc/nftables.conf` via a managed `include` block. `nftables.service` is
 enabled at boot.
 
 Verify:
 
 ```sh
-nft list table inet bitcoin-listener
-nft -c -f /etc/nftables.d/60-bitcoin-listener.nft     # validate syntax
+nft list table inet shard-listener
+nft -c -f /etc/nftables.d/60-shard-listener.nft     # validate syntax
 ```
 
 ### FreeBSD (pf)
 
-Anchor template: `ansible/roles/firewall/templates/bitcoin-listener.pf.conf.j2`.
+Anchor template: `ansible/roles/firewall/templates/shard-listener.pf.conf.j2`.
 
-Installed as `/etc/pf.anchors/bitcoin-listener` and loaded via a managed
+Installed as `/etc/pf.anchors/shard-listener` and loaded via a managed
 anchor block in `/etc/pf.conf`.
 
 Verify:
 
 ```sh
 pfctl -sr
-pfctl -a bitcoin-listener -sr
+pfctl -a shard-listener -sr
 ```
 
 ## Operational notes
