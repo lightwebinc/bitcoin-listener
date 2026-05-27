@@ -2,7 +2,7 @@
 
 `shard-listener` is the deployment/operations repo for
 [`shard-listener`](https://github.com/lightwebinc/shard-listener) — the
-inverse side of the `bitcoin-ingress` / `bitcoin-shard-proxy` pipeline. Where
+inverse side of the `ingress-infra` / `shard-proxy` pipeline. Where
 the ingress proxy _sends_ sharded transaction frames into an IPv6 multicast
 fabric, the listener _receives_ those frames, filters by shard / subtree, and
 forwards matching frames as unicast to downstream consumers and/or re-emits
@@ -33,8 +33,8 @@ beacon discovery are documented in the service and project repos:
 
 - [shard-listener — Architecture](https://github.com/lightwebinc/shard-listener/blob/main/docs/architecture.md)
 - [shard-listener — Configuration](https://github.com/lightwebinc/shard-listener/blob/main/docs/configuration.md)
-- [bitcoin-multicast — DESIGN.md](https://github.com/lightwebinc/bitcoin-multicast/blob/main/DESIGN.md)
-- BRC drafts: `bitcoin-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135}-*.md`
+- [bsv-multicast — DESIGN.md](https://github.com/lightwebinc/bsv-multicast/blob/main/DESIGN.md)
+- BRC drafts: `bsv-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135}-*.md`
 
 ## Data plane
 
@@ -88,9 +88,9 @@ the socket in the first place.
 | Terraform | `terraform/` | Node module + AWS / generic examples             |
 | Docs      | `docs/`      | Architecture, ops, security, BGP, networking, OS |
 
-## Relationship to `bitcoin-ingress`
+## Relationship to `ingress-infra`
 
-| Concern                                       | `bitcoin-ingress` (proxy) | `shard-listener` (this repo)    |
+| Concern                                       | `ingress-infra` (proxy) | `shard-listener` (this repo)    |
 | --------------------------------------------- | ------------------------- | --------------------------------- |
 | Direction                                     | TX onto fabric            | RX from fabric                    |
 | Primary iface                                 | `egress_iface` (send)     | `ingress_iface` (receive)         |

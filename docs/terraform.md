@@ -73,7 +73,7 @@ Copy `examples/generic/` or `examples/aws-ec2/` and adapt:
 
 | Variable          | Default    | Why                                             |
 |-------------------|------------|--------------------------------------------------|
-| `listen_port`     | `9001`     | Matches `bitcoin-ingress`'s `egress_port`        |
+| `listen_port`     | `9001`     | Matches `ingress-infra`'s `egress_port`        |
 | `metrics_addr`    | `:9200`    | Avoid collision with proxy (`:9100`)             |
 | `bgp_local_as`    | `65002`    | Different from proxy (`65001`)                   |
 | `enable_firewall` | `true`     | Default-on for security                          |

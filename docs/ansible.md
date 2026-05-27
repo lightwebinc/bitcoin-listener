@@ -96,7 +96,7 @@ ansible-playbook site.yml --tags bgp -e bgp_password=...
 ansible-playbook site.yml -l listener-01
 ```
 
-## Known issues (inherited from `bitcoin-ingress`)
+## Known issues (inherited from `ingress-infra`)
 
 - Ubuntu LXD images may lack `acl` — installed by the `common` role.
 - The `git` module fails in some LXD images with "unsafe repository"; the
