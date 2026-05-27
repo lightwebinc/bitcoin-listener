@@ -57,7 +57,8 @@ all:
     #       gre_remote_ip6: "2001:db8:3::1"
     #       gre_inner_ipv6: "fd00::10/64"
 
-    # For an LXD / local lab example see docs/lxd-lab.md
+    # For local lab / CI testing, use the Docker harness in the
+    # multicast-test repo. For Kubernetes, see multicast-kube-infra.
 
     # iBGP upstream peers — run bgp-ibgp.yml against this group
     # bgp_ibgp_nodes:

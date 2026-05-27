@@ -74,6 +74,18 @@ mc_egress_scope: ""
 mc_egress_group_id: ""
 mc_egress_hoplimit: 1
 
+# Block header egress (BRC-135): re-emit 80-byte header from BRC-131 BlockAnnounce
+# as a 172-byte BRC-135 frame on a dedicated SPV egress path. Disabled by default.
+header_egress_enabled: false
+header_egress_addr: "127.0.0.1:9101"
+header_egress_proto: "udp"
+header_mc_egress_enabled: false
+header_mc_egress_iface: ""
+header_mc_egress_port: 0
+header_mc_egress_scope: ""
+header_mc_egress_group_id: ""
+header_mc_egress_hoplimit: 1
+
 # Per-deployment egress TxID dedup.
 # HA siblings share deployment_id; distinct deployment_ids race independently.
 # Empty deployment_id/node_id → derived from hostname at runtime.
