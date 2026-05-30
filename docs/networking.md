@@ -23,7 +23,13 @@ Deploys:
   host can still reach mgmt over v4; set `false` on multi-NIC or lab hosts
   where the ingress iface is dedicated to the fabric).
 - `/etc/sysctl.d/60-shard-listener.conf` — `accept_ra` settings to allow
-  IPv6 autoconf.
+  IPv6 autoconf, plus `force_mld_version=2` and `mld_max_msf=1024`
+  (configurable via `networking_mld_max_msf`). MLDv2 is mandatory when
+  the listener runs in `sourceMode=ssm` (Posture B/C/D in the
+  [SSM Support Plan](https://github.com/lightwebinc/bsv-multicast/blob/main/docs/SourceSpecificMulticast/ssm-support-plan.md)),
+  and the kernel default of 64 source filters per socket is below the
+  production publisher count — `MCAST_JOIN_SOURCE_GROUP` returns
+  `ENOBUFS` once exceeded. Pick `≥ 2 × N_publishers`.
 
 No `ip -6 route add ff00::/8` is needed on the receive side: MLD joins
 handle reception regardless of routing table. (The ingress proxy *does*

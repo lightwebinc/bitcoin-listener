@@ -15,6 +15,15 @@
   loop:
     - { name: net.ipv6.conf.all.accept_ra, value: "1" }
     - { name: "net.ipv6.conf.{{ networking_ingress_iface }}.accept_ra", value: "1" }
+    # MLDv2 is required when the listener runs in SSM mode
+    # (sourceMode=ssm). Forced for ASM too — harmless and avoids surprises
+    # if the operator switches modes later.
+    - { name: net.ipv6.conf.all.force_mld_version, value: "2" }
+    # Per-socket source-filter cap. Linux default 64 is below production
+    # SSM publisher count; raise to networking_mld_max_msf
+    # (default 1024 ≈ 2× expected fleet). Required by Posture B/C/D
+    # of the SSM Support Plan; no-op in ASM mode.
+    - { name: net.ipv6.mld_max_msf, value: "{{ networking_mld_max_msf | default('1024') }}" }
 
 - name: Deploy netplan config for ethernet ingress
   ansible.builtin.template:
