@@ -45,23 +45,30 @@ BGP so TCP/179 is permitted when the daemon starts.
 
 See `ansible/group_vars/all.yml` for the full list. Quick reference:
 
-| Variable           | Default                  | Notes                                               |
-|--------------------|--------------------------|------------------------------------------------------|
-| `ingress_iface`    | `eth0`                   | **Must be set per-host** (group_vars precedence)     |
-| `ingress_mode`     | `ethernet`               | Or `gre` (then set `ingress_iface: gre6-bsl`)        |
-| `listen_port`      | `9001`                   | Matches proxy's `egress_port`                        |
-| `shard_bits`       | `2`                      | Must match proxy                                     |
-| `egress_addr`      | `127.0.0.1:9100`         | Downstream consumer                                  |
-| `egress_proto`     | `udp`                    | Or `tcp`                                             |
-| `retry_endpoints`  | `""`                     | `"host:port,host:port"`                              |
-| `num_workers`      | `0` (= NumCPU)           | **Set `1` per-host** for multicast receive (see note)|
-| `metrics_addr`     | `:9200`                  |                                                      |
-| `otlp_endpoint`    | `""`                     |                                                      |
-| `otlp_interval`    | `30s`                    |                                                      |
-| `enable_firewall`  | `true`                   | Set `false` for labs only                            |
-| `mgmt_cidrs_v4`    | `[]`                     | **Must be set per-host**; SSH + metrics allow-list   |
-| `enable_bgp`       | `false`                  |                                                      |
-| `bgp_local_as`     | `65002`                  |                                                      |
+| Variable                   | Default          | Notes                                                  |
+|----------------------------|------------------|--------------------------------------------------------|
+| `ingress_iface`            | `eth0`           | **Must be set per-host** (group_vars precedence)       |
+| `ingress_mode`             | `ethernet`       | Or `gre` (then set `ingress_iface: gre6-bsl`)          |
+| `listen_port`              | `9001`           | Matches proxy's `egress_port`                          |
+| `shard_bits`               | `2`              | Must match proxy                                       |
+| `egress_addr`              | `127.0.0.1:9100` | Downstream consumer                                    |
+| `egress_proto`             | `udp`            | Or `tcp`                                               |
+| `retry_endpoints`          | `""`             | `"host:port,host:port"`                                |
+| `num_workers`              | `0` (= NumCPU)   | **Set `1` per-host** for multicast receive (see note)  |
+| `metrics_addr`             | `:9200`          |                                                        |
+| `otlp_endpoint`            | `""`             |                                                        |
+| `otlp_interval`            | `30s`            |                                                        |
+| `enable_firewall`          | `true`           | Set `false` for labs only                              |
+| `mgmt_cidrs_v4`            | `[]`             | **Must be set per-host**; SSH + metrics allow-list     |
+| `enable_bgp`               | `false`          |                                                        |
+| `bgp_local_as`             | `65002`          |                                                        |
+| `header_mc_egress_enabled` | `false`          | BRC-135 block-header re-emission to a multicast group  |
+| `header_mc_egress_iface`   | `""`             | NIC for BRC-135 egress; defaults to `ingress_iface`    |
+| `header_egress_enabled`    | `false`          | BRC-135 block-header re-emission to a unicast/TCP sink |
+| `egress_dedup_redis_addr`  | `""`             | Per-deployment egress dedup; empty = LRU-only          |
+| `egress_dedup_prefix`      | `bsl:egr:`       | Redis key prefix; deployment-id appended downstream    |
+| `ingress_set_redis_addr`   | `""`             | Courtesy mark to proxy's `bsp:tx:` namespace           |
+| `ingress_set_prefix`       | `bsp:tx:`        | **Must match proxy's `txid_dedup_prefix`**             |
 
 ## Per-host overrides
 
