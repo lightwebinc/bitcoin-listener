@@ -138,3 +138,5 @@ jobs:
       - name: terraform fmt check
         run: terraform fmt -check -recursive
         working-directory: ${{ matrix.dir }}
+
+# CI re-registration nudge (GitHub stale workflow routing)
