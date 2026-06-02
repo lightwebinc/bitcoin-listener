@@ -8,6 +8,9 @@
     - role: common
       tags: [common]
 
+    - role: perf-tuning
+      tags: [perf-tuning]
+
     - role: shard-listener
       tags: [listener]
 
