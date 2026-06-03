@@ -110,3 +110,12 @@ tcpdump -i eth0 -nn 'udp and ip6 multicast and port 9001'
 # FreeBSD
 netstat -g -f inet6
 ```
+
+## Dedup backend connectivity
+
+The egress dedup and ingress-mark backends (`egress_dedup_backend` /
+`ingress_set_backend`) are out-of-band TCP services on the management network:
+Redis/Valkey/Dragonfly on 6379, or Aerospike Community Edition on 3000. They are
+addressed independently of each other and of the multicast fabric. Backend
+errors fail open (the listener forwards and records a metric). See
+[ModularCacheBackend](https://github.com/lightwebinc/bsv-multicast/blob/main/docs/ModularCacheBackend/modular-cache-backend.md).
