@@ -118,4 +118,4 @@ The egress dedup and ingress-mark backends (`egress_dedup_backend` /
 Redis/Valkey/Dragonfly on 6379, or Aerospike Community Edition on 3000. They are
 addressed independently of each other and of the multicast fabric. Backend
 errors fail open (the listener forwards and records a metric). See
-[ModularCacheBackend](https://github.com/lightwebinc/bsv-multicast/blob/main/docs/ModularCacheBackend/modular-cache-backend.md).
+[shard-common cache backend](https://github.com/lightwebinc/shard-common/blob/main/docs/cache-backend.md).
