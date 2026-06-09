@@ -83,7 +83,10 @@ variable "bgp_vip6" {
 }
 
 variable "egress_addr" {
-  description = "Downstream unicast host:port for forwarded frames"
+  # The 127.0.0.1 default is for single-host / co-located test setups ONLY. In a
+  # multi-node mesh the listener must forward to a real downstream consumer reachable
+  # from this node; loopback silently drops frames at the egress edge. Override per node.
+  description = "Downstream unicast host:port for forwarded frames (loopback default is test-only)"
   type        = string
   default     = "127.0.0.1:9100"
 }
