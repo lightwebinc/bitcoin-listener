@@ -1,6 +1,11 @@
 # Local .terraform directories
 .terraform/
 
+# Lock files inside reusable child modules are never consulted by Terraform
+# (only root configs use them); they only appear from running init in a module
+# dir during testing. Root/example lock files are intentionally committed.
+terraform/modules/*/.terraform.lock.hcl
+
 # .tfstate files
 *.tfstate
 *.tfstate.*
