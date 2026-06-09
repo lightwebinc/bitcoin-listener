@@ -26,7 +26,7 @@ Deploys:
   IPv6 autoconf, plus `force_mld_version=2` and `mld_max_msf=1024`
   (configurable via `networking_mld_max_msf`). MLDv2 is mandatory when
   the listener runs in `sourceMode=ssm` (Posture B/C/D in the
-  [SSM Support Plan](https://github.com/lightwebinc/bsv-multicast/blob/main/docs/SourceSpecificMulticast/ssm-support-plan.md)),
+  [SSM Support Plan](https://github.com/lightwebinc/bsv-multicast/blob/main/DESIGN.md#source-specific-multicast-ssm)),
   and the kernel default of 64 source filters per socket is below the
   production publisher count — `MCAST_JOIN_SOURCE_GROUP` returns
   `ENOBUFS` once exceeded. Pick `≥ 2 × N_publishers`.
