@@ -97,7 +97,7 @@ the socket in the first place.
 | Needs `ExecStartPre ip -6 route add ff00::/8` | **Yes**                   | **No** (MLD-only)                 |
 | Default AS                                    | `65001`                   | `65002`                           |
 | Metrics port                                  | `:9100`                   | `:9200`                           |
-| Listen port                                   | `9000` UDP                | `9001` UDP (matches proxy egress) |
+| Listen port                                   | `8725` UDP                | `9001` UDP (matches proxy egress) |
 | BGP role                                      | Fabric reachability       | Listener-reachability **only**    |
 | Firewall role                                 | n/a                       | Built-in `firewall` Ansible role  |
 
