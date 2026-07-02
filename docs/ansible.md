@@ -62,6 +62,7 @@ See `ansible/group_vars/all.yml` for the full list. Quick reference:
 | `mgmt_cidrs_v4`            | `[]`             | **Must be set per-host**; SSH + metrics allow-list     |
 | `enable_bgp`               | `false`          |                                                        |
 | `bgp_local_as`             | `65002`          |                                                        |
+| `bgp_health_path`          | `/healthz`       | Path bsl-bgp-check probes; `/readyz` for graceful drain |
 | `header_mc_egress_enabled` | `false`          | BRC-135 block-header re-emission to a multicast group  |
 | `header_mc_egress_iface`   | `""`             | NIC for BRC-135 egress; defaults to `ingress_iface`    |
 | `header_egress_enabled`    | `false`          | BRC-135 block-header re-emission to a unicast/TCP sink |

@@ -180,6 +180,10 @@ bgp_router_id: "{{ ansible_default_ipv4.address }}"
 bgp_hold_time: 90
 bgp_keepalive: 30
 bgp_password: ""
+# Health path the bsl-bgp-check timer probes to enable/withdraw the anycast VIP.
+# /healthz (liveness) = withdraw when the listener is dead; /readyz = withdraw at
+# drain start (graceful anycast shed for a hostNetwork listener pod). See I1.
+bgp_health_path: "/healthz"
 
 # iBGP peers (used by bgp-ibgp role, playbook: bgp-ibgp.yml)
 # Each entry: { peer_ip: "", peer_ip6: "", description: "" }
