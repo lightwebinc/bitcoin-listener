@@ -119,3 +119,10 @@ Redis/Valkey/Dragonfly on 6379, or Aerospike Community Edition on 3000. They are
 addressed independently of each other and of the multicast fabric. Backend
 errors fail open (the listener forwards and records a metric). See
 [shard-common cache backend](https://github.com/lightwebinc/shard-common/blob/main/docs/cache-backend.md).
+
+The `firewall` role renders outbound TCP allow rules (non-fabric
+interfaces only) for the ports in `egress_dedup_redis_addr`,
+`egress_dedup_aerospike_hosts`, `ingress_set_redis_addr`, and
+`ingress_set_aerospike_hosts`. After changing a backend address, re-run
+with `--tags firewall` or the connection will be dropped by the
+default-deny output policy.

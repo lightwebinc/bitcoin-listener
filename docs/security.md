@@ -14,7 +14,9 @@ downstream consumer traffic could leak back into the fabric.
 The invariant this repo enforces is:
 
 > **The fabric interface carries only (a) inbound multicast group data and
-> (b) outbound NACK datagrams to configured retry endpoints.**
+> beacon ADVERTs, (b) outbound NACK datagrams to configured retry
+> endpoints, and (c) inbound unicast NACK replies (retransmit +
+> ACK/MISS/THROTTLED) from those endpoints.**
 >
 > All other traffic on the fabric interface is dropped. No IP forwarding
 > is permitted between the fabric interface and any other interface.
@@ -24,12 +26,15 @@ The invariant this repo enforces is:
 | Direction | Interface              | Protocol / Port / Address                                   |
 |-----------|------------------------|--------------------------------------------------------------|
 | In        | fabric (`ingress_iface` / `gre6-bsl`) | UDP `ff00::/8` → `LISTEN_PORT` (9001 default)  |
+| In        | fabric                 | UDP `ff00::/8` → `BEACON_PORT` (9300 default; retry-endpoint ADVERTs) |
+| In        | fabric                 | UDP unicast from `RETRY_ENDPOINTS` (NACK retransmit + ACK/MISS/THROTTLED replies) |
 | In        | fabric                 | ICMPv6 (NDP, MLD, diag); ICMPv4 (echo, dest-unreach)         |
 | Out       | fabric                 | UDP → `RETRY_ENDPOINTS` (NACK dispatch)                      |
 | Out       | fabric                 | ICMPv6 (NDP, MLD reports)                                    |
 | In        | non-fabric             | TCP/22 + metrics port, from `mgmt_cidrs_v4/v6`               |
 | Out       | non-fabric             | `EGRESS_PROTO` → `EGRESS_ADDR` (downstream forward)          |
 | Out       | non-fabric             | DNS (53), NTP (123), HTTP/S (80/443) for OS updates          |
+| Out       | non-fabric             | TCP → dedup / ingress-mark backend ports (only when configured) |
 | In / Out  | any                    | BGP (TCP/179) — **only when `enable_bgp: true`**             |
 | Forward   | any                    | Always dropped                                               |
 
@@ -86,9 +91,12 @@ pfctl -a shard-listener -sr
 - A consumer that pivots through the `egress_addr` target host — downstream
   topology protection is out of scope here; use network segmentation
   upstream.
-- Multicast flooding: the listener accepts all UDP on `LISTEN_PORT` from
-  any multicast source on the fabric iface. Source-specific multicast
-  filtering (SSM / MLDv2 source include lists) is a future enhancement.
+- Multicast flooding: in the default `asm` source mode the listener
+  accepts all UDP on `LISTEN_PORT` from any multicast source on the
+  fabric iface. shard-listener's `-source-mode ssm` (MLDv2 source-include
+  joins) restricts reception to discovered/bootstrap sources — see
+  `source_mode` in `group_vars/all.yml` and the MLDv2 sysctl notes in
+  [`networking.md`](networking.md).
 
 ## Cloud SGs vs host firewall
 

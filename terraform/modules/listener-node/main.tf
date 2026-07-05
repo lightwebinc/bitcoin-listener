@@ -39,6 +39,7 @@ locals {
       nack_backoff_max = var.nack_backoff_max
       nack_max_retries = tostring(var.nack_max_retries)
       nack_gap_ttl     = var.nack_gap_ttl
+      num_workers      = tostring(var.num_workers)
       metrics_addr     = var.metrics_addr
       otlp_endpoint    = var.otlp_endpoint
       otlp_interval    = var.otlp_interval

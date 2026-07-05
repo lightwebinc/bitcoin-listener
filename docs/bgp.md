@@ -6,11 +6,15 @@ The listener BGP role has **one purpose**: advertise the listener's own
 unicast prefix into the multicast fabric so MLD/PIM can build distribution
 trees toward the node in L3 fabrics.
 
-**NACK reply routing is not needed.** NACK is send-only
-(`shard-listener/nack/nack.go`); the listener uses `net.DialUDP`
-with an ephemeral source and does not receive unicast NACK replies. The
-retry node re-multicasts missing frames, which the listener picks up on
-its normal multicast receive path.
+**NACK reply routing matters.** NACK dispatch
+(`shard-listener/nack/nack.go`) uses an unconnected UDP socket that also
+*receives* the retry endpoint's unicast replies: a retransmit of the
+missing frame plus a small ACK/MISS/THROTTLED control response. Those
+replies are addressed to the NACK's source address, so that address must
+be routable from the retry endpoints. On tunnelled fabrics the kernel's
+per-route source pick (e.g. a point-to-point tunnel inner address) can
+misroute the reply off the tunnel — a routable unicast identity avoids
+this.
 
 The loopback VIP (`bgp_vip` / `bgp_vip6`) is the listener's own unicast
 identity inside the fabric.
@@ -49,14 +53,17 @@ Select via `bgp_daemon: bird2` or `bgp_daemon: frr`.
 | `bgp_password`  | `""`      | Optional MD5 session password                         |
 | `bgp_hold_time` | `90`      |                                                       |
 | `bgp_keepalive` | `30`      |                                                       |
+| `bgp_health_path` | `/healthz` | Path `bsl-bgp-check.sh` probes; `/readyz` withdraws at drain start |
 
 ## Health-driven withdrawal
 
 The role installs three pieces:
 
 - `/usr/local/bin/bsl-bgp-check.sh` — probes
-  `http://127.0.0.1:9200/healthz` and enables/disables the upstream BGP
-  protocol accordingly.
+  `http://127.0.0.1:9200{{ bgp_health_path }}` (default `/healthz`) and
+  enables/disables the upstream BGP protocol accordingly. Set
+  `bgp_health_path: /readyz` to withdraw at drain start (graceful
+  anycast shed).
 - `bsl-bgp-check.service` + `bsl-bgp-check.timer` (systemd) — runs every
   10 s after a 30 s delay on boot.
 - `/usr/local/bin/bsl-bgp-withdraw.sh` — called from

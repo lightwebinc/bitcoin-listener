@@ -11,7 +11,8 @@ ansible/
   inventory/hosts.example.yml
   roles/
     common/                 Base OS deps + Go toolchain
-    shard-listener/ Build + systemd / rc.d unit + config
+    perf-tuning/            High-PPS host tuning (UDP buffers, busy-poll, C-states)
+    shard-listener/         Build + systemd / rc.d unit + config
     networking/             Interface / multicast route / VIP config
     firewall/               nftables (Linux) / pf (FreeBSD) perimeter
     bgp/                    BIRD2 or FRR + health-check + withdraw
@@ -33,10 +34,11 @@ ansible-playbook -i inventory/hosts.yml site.yml
 `site.yml` runs roles in this order:
 
 1. `common` — install packages, Go toolchain
-2. `shard-listener` — build binary, install service
-3. `networking` — configure `ingress_iface`, GRE, BGP VIP
-4. `firewall` *(when `enable_firewall: true`)* — lock down the fabric perimeter
-5. `bgp` *(when `enable_bgp: true`)* — BIRD2 or FRR
+2. `perf-tuning` — high-PPS host tuning (UDP buffers, busy-poll, C-states)
+3. `shard-listener` — build binary, install service
+4. `networking` — configure `ingress_iface`, GRE, BGP VIP
+5. `firewall` *(when `enable_firewall: true`)* — lock down the fabric perimeter
+6. `bgp` *(when `enable_bgp: true`)* — BIRD2 or FRR
 
 Firewall runs **after** networking so interface names resolve, and **before**
 BGP so TCP/179 is permitted when the daemon starts.
@@ -51,6 +53,8 @@ See `ansible/group_vars/all.yml` for the full list. Quick reference:
 | `ingress_mode`             | `ethernet`       | Or `gre` (then set `ingress_iface: gre6-bsl`)          |
 | `listen_port`              | `9001`           | Matches proxy's `egress_port`                          |
 | `shard_bits`               | `2`              | Must match proxy                                       |
+| `listener_mode`            | `collapsed`      | Or `receiver` / `delivery` (P3b role split)            |
+| `source_mode`              | `asm`            | Or `ssm` (needs MLDv2 sysctls + `ssm_bootstrap_*`)     |
 | `egress_addr`              | `127.0.0.1:9100` | Downstream consumer                                    |
 | `egress_proto`             | `udp`            | Or `tcp`                                               |
 | `retry_endpoints`          | `""`             | `"host:port,host:port"`                                |

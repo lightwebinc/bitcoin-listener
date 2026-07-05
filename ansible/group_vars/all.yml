@@ -15,7 +15,7 @@ listener_user: "shard-listener"
 listener_group: "shard-listener"
 
 # Go toolchain version (used when building from source)
-go_version: "1.25.10"
+go_version: "1.25.11"
 go_install_dir: "/usr/local/go"
 
 # ------------------------------------------------------------
@@ -39,6 +39,15 @@ shard_bits: 2
 mc_scope: "site"                # link | site | org | global
 mc_group_id: "0x000B"                # IANA group-id (default 0x000B = IANA Bitcoin)
 
+# Listener role split + multicast addressing model (shard-listener v1.6.9+)
+listener_mode: "collapsed"      # collapsed | receiver | delivery
+delivery_addrs: ""              # receiver mode: comma-separated delivery host:port fan-out (empty = egress_addr)
+source_mode: "asm"              # asm | ssm — ssm needs MLDv2 sysctls; see docs/networking.md
+ssm_bootstrap_beacon: ""        # SSM: CSV of retry-endpoint sources for the beacon group join
+ssm_bootstrap_manifest: ""      # SSM: CSV of shard-manifest sources for the manifest group join
+ssm_bootstrap_subtree_announce: ""  # SSM: CSV of subtree-announce emitter sources
+ssm_bootstrap_refresh: "30s"    # SSM: DNS re-resolve interval for bootstrap entries
+
 # Filtering (empty strings = no filtering)
 shard_include: ""               # Comma-separated shard indices, e.g. "0,1" (empty = join ALL groups)
 subtree_include: ""             # Comma-separated hex subtree IDs to allow (V2 only)
@@ -61,7 +70,7 @@ num_workers: 0                  # 0 = runtime.NumCPU()
 metrics_addr: ":9200"           # Listener metrics (not :9100 — avoids collision with proxy)
 otlp_endpoint: ""               # OTLP gRPC push; empty disables
 otlp_interval: "30s"            # OTLP metric export cadence
-# Unified logging — see bsv-multicast/docs/UnifiedLogging/unified-logging-plan.md
+# Unified logging — see shard-common/docs/logging.md
 log_format: "json"              # text | json (json for fleet aggregation)
 log_level: "info"               # debug|info|warn|error; runtime-togglable via POST /loglevel + SIGHUP
 trace_sampling: 0               # 0..1 trace head sampling (0 = off; exports via otlp_endpoint)
@@ -97,7 +106,7 @@ deployment_id: ""
 node_id: ""
 # Tier-2 backend is modular (shard-common/cache): redis|aerospike|memory|none.
 # Empty backend infers redis when the matching redis_addr is set, else none.
-# See bsv-multicast/docs/ModularCacheBackend/modular-cache-backend.md
+# See shard-common/docs/cache-backend.md
 egress_dedup_backend: ""          # redis|aerospike|memory|none
 egress_dedup_redis_addr: ""       # Redis/Valkey/Dragonfly addr; empty = local-only
 egress_dedup_aerospike_hosts: ""  # comma-separated host:port (required when backend=aerospike)
@@ -160,9 +169,9 @@ gre_remote_ip4: ""              # Remote outer endpoint (ipv4 outer)
 
 # ------------------------------------------------------------
 # BGP (optional)
-# Sole purpose on listener: advertise this listener's own unicast prefix into
-# the fabric so MLD/PIM can build multicast distribution trees toward it.
-# NACK is send-only, so no reverse-path advertisement is required.
+# Purpose on listener: advertise this listener's own unicast prefix into
+# the fabric so MLD/PIM can build multicast distribution trees toward it,
+# and give NACK unicast replies (retransmit + ACK/MISS) a routable return path.
 # ------------------------------------------------------------
 enable_bgp: false
 bgp_daemon: "bird2"             # bird2 | frr
@@ -182,7 +191,7 @@ bgp_keepalive: 30
 bgp_password: ""
 # Health path the bsl-bgp-check timer probes to enable/withdraw the anycast VIP.
 # /healthz (liveness) = withdraw when the listener is dead; /readyz = withdraw at
-# drain start (graceful anycast shed for a hostNetwork listener pod). See I1.
+# drain start (graceful anycast shed for a hostNetwork listener pod).
 bgp_health_path: "/healthz"
 
 # iBGP peers (used by bgp-ibgp role, playbook: bgp-ibgp.yml)

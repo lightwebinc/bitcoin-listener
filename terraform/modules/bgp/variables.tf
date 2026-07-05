@@ -9,6 +9,12 @@ variable "bgp_daemon" {
   }
 }
 
+variable "bgp_health_path" {
+  description = "Health path bsl-bgp-check probes (/healthz = liveness; /readyz = withdraw at drain start)"
+  type        = string
+  default     = "/healthz"
+}
+
 variable "bgp_hold_time" {
   description = "BGP hold time in seconds"
   type        = number

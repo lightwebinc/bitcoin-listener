@@ -1,6 +1,6 @@
 # Architecture
 
-`shard-listener` is the deployment/operations repo for
+`listener-infra` is the deployment/operations repo for
 [`shard-listener`](https://github.com/lightwebinc/shard-listener) — the
 inverse side of the `ingress-infra` / `shard-proxy` pipeline. Where
 the ingress proxy _sends_ sharded transaction frames into an IPv6 multicast
@@ -20,21 +20,23 @@ them via multicast egress for domain bridging.
                                                       │ multicast (opt.) │─▶ bridged domain
                                                       └──────────────────┘
 
-                NACK (UDP, send-only):
+                NACK (UDP, request/reply):
                   shard-listener ──► retry-endpoints
+                  (unicast retransmit + ACK/MISS/THROTTLED replies return)
 ```
 
 ## Protocol details
 
 Deploys `shard-listener`, which receives BRC-124/BRC-128 transaction frames,
-BRC-130 fragments, BRC-131 block control, BRC-132 subtree data, and BRC-134 anchor frames
+BRC-142 bundle (coalesced) frames, BRC-130 fragments, BRC-131 block control,
+BRC-132 subtree data, BRC-134 anchor frames, and BRC-139 shard manifests
 on the multicast fabric. Frame formats, filtering, gap tracking, NACK/retransmission, and
 beacon discovery are documented in the service and project repos:
 
 - [shard-listener — Architecture](https://github.com/lightwebinc/shard-listener/blob/main/docs/architecture.md)
 - [shard-listener — Configuration](https://github.com/lightwebinc/shard-listener/blob/main/docs/configuration.md)
 - [bsv-multicast — DESIGN.md](https://github.com/lightwebinc/bsv-multicast/blob/main/DESIGN.md)
-- BRC drafts: `bsv-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135}-*.md`
+- BRC drafts: `bsv-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135,139,142}-*.md`
 
 ## Data plane
 
@@ -90,7 +92,7 @@ the socket in the first place.
 
 ## Relationship to `ingress-infra`
 
-| Concern                                       | `ingress-infra` (proxy) | `shard-listener` (this repo)    |
+| Concern                                       | `ingress-infra` (proxy) | `listener-infra` (this repo)    |
 | --------------------------------------------- | ------------------------- | --------------------------------- |
 | Direction                                     | TX onto fabric            | RX from fabric                    |
 | Primary iface                                 | `egress_iface` (send)     | `ingress_iface` (receive)         |

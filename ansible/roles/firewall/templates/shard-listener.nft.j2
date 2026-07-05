@@ -2,7 +2,7 @@
 # Managed by Ansible — do not edit manually
 #
 # Perimeter model:
-#   * Fabric interface ({{ firewall_fabric_iface }}): multicast-in + NACK-out only
+#   * Fabric interface ({{ firewall_fabric_iface }}): multicast-in (data + beacons) + NACK out / unicast replies in only
 #   * Non-fabric interfaces: management + downstream egress to {{ firewall_egress_host }}
 #   * Forwarding: disabled
 
@@ -169,9 +169,17 @@ table inet shard-listener {
         oifname != "{{ firewall_fabric_iface }}" udp dport { 53, 123 } accept
         oifname != "{{ firewall_fabric_iface }}" tcp dport { 53, 80, 443 } accept
 
-{% if txid_dedup_addr | default('') | length > 0 %}
-        # TxID dedup Redis — outbound TCP to {{ txid_dedup_addr }} on management interface
-        oifname != "{{ firewall_fabric_iface }}" tcp dport {{ txid_dedup_addr.split(':') | last }} accept
+{# Dedup / ingress-mark backends (shard-common/cache: Redis or Aerospike). #}
+{# Out-of-band TCP on the management network; ports derived from the #}
+{# configured host:port addresses. See docs/networking.md. #}
+{% set dedup_backend_addrs = ([egress_dedup_redis_addr | default(''), ingress_set_redis_addr | default('')]
+     + (egress_dedup_aerospike_hosts | default('')).split(',')
+     + (ingress_set_aerospike_hosts | default('')).split(','))
+     | map('trim') | select('match', '.+:.+') | list %}
+{% set dedup_backend_ports = dedup_backend_addrs | map('regex_replace', '^.*:', '') | unique | list %}
+{% if dedup_backend_ports | length > 0 %}
+        # Dedup / ingress-mark backends — outbound TCP on management interfaces only
+        oifname != "{{ firewall_fabric_iface }}" tcp dport { {{ dedup_backend_ports | join(', ') }} } accept
 {% endif %}
 
         counter drop

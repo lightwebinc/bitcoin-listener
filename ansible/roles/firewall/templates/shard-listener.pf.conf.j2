@@ -2,7 +2,7 @@
 # Managed by Ansible — do not edit manually
 #
 # Perimeter model mirrors the nftables policy:
-#   * Fabric iface ({{ firewall_fabric_iface }}): multicast-in + NACK-out only
+#   * Fabric iface ({{ firewall_fabric_iface }}): multicast-in (data + beacons) + NACK out / unicast replies in only
 #   * Non-fabric ifaces: management + downstream egress
 #   * No forwarding
 
@@ -90,3 +90,16 @@ pass quick proto tcp from any port 179 to any keep state
 # --- Basic outbound: DNS / NTP / HTTP(S) on non-fabric ---
 pass out quick on ! $fabric_if proto udp to any port { 53, 123 } keep state
 pass out quick on ! $fabric_if proto tcp to any port { 53, 80, 443 } keep state
+
+{# Dedup / ingress-mark backends (shard-common/cache: Redis or Aerospike). #}
+{# Out-of-band TCP on the management network; ports derived from the #}
+{# configured host:port addresses. See docs/networking.md. #}
+{% set dedup_backend_addrs = ([egress_dedup_redis_addr | default(''), ingress_set_redis_addr | default('')]
+     + (egress_dedup_aerospike_hosts | default('')).split(',')
+     + (ingress_set_aerospike_hosts | default('')).split(','))
+     | map('trim') | select('match', '.+:.+') | list %}
+{% set dedup_backend_ports = dedup_backend_addrs | map('regex_replace', '^.*:', '') | unique | list %}
+{% if dedup_backend_ports | length > 0 %}
+# --- Dedup / ingress-mark backends: outbound TCP, non-fabric only ---
+pass out quick on ! $fabric_if proto tcp to any port { {{ dedup_backend_ports | join(', ') }} } keep state
+{% endif %}

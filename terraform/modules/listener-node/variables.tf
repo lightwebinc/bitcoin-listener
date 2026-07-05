@@ -233,9 +233,19 @@ variable "nack_jitter_max" {
 }
 
 variable "nack_max_retries" {
-  description = "Max NACK attempts per gap"
+  description = "Max NACK attempts per gap (budget for 3 beacon + 3 static-seed endpoints with headroom)"
   type        = number
-  default     = 5
+  default     = 8
+}
+
+variable "num_workers" {
+  # Linux delivers multicast datagrams to EVERY socket in a SO_REUSEPORT group
+  # (no load-balancing), so num_workers > 1 forwards each frame N times. Keep 1
+  # for multicast receive; the Ansible group_vars default of 0 (= NumCPU) is
+  # only safe for unicast ingest.
+  description = "Listener worker count (keep 1 — SO_REUSEPORT duplicates every multicast frame per worker)"
+  type        = number
+  default     = 1
 }
 
 variable "otlp_endpoint" {

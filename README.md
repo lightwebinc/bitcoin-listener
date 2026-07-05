@@ -1,4 +1,4 @@
-# shard-listener
+# listener-infra
 
 [![Lint](https://github.com/lightwebinc/listener-infra/actions/workflows/lint.yml/badge.svg)](https://github.com/lightwebinc/listener-infra/actions/workflows/lint.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -11,8 +11,8 @@ nodes — multicast subscribers that filter and forward BSV transactions to
 downstream consumers.
 
 ```text
-FF05::<shard>:9001  ──multicast──▶  shard-listener  ──UDP/TCP──▶  consumer
-                                    (this repo deploys)
+FF05::B:<shard>:9001  ──multicast──▶  shard-listener  ──UDP/TCP──▶  consumer
+                                      (this repo deploys)
 ```
 
 Includes a default-on multicast-fabric firewall (nftables / pf) and optional
