@@ -67,6 +67,8 @@ See `ansible/group_vars/all.yml` for the full list. Quick reference:
 | `enable_bgp`               | `false`          |                                                        |
 | `bgp_local_as`             | `65002`          |                                                        |
 | `bgp_health_path`          | `/healthz`       | Path bsl-bgp-check probes; `/readyz` for graceful drain |
+| `require_block_pow`        | `true`           | BRC-131 announce PoW gate; **default ON** (bin parity) |
+| `min_pow_bits`             | `"0"`            | Compact nBits floor; `0` = header self-consistency only|
 | `header_mc_egress_enabled` | `false`          | BRC-135 block-header re-emission to a multicast group  |
 | `header_mc_egress_iface`   | `""`             | NIC for BRC-135 egress; defaults to `ingress_iface`    |
 | `header_egress_enabled`    | `false`          | BRC-135 block-header re-emission to a unicast/TCP sink |
