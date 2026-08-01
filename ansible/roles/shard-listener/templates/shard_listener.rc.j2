@@ -37,14 +37,16 @@ shard_listener_prestart()
 {
     # Load environment from config file
     if [ -f "${shard_listener_config}" ]; then
+        # `set -a` auto-exports EVERY variable the config renders, so a new
+        # knob never has to be added to an export list here. The previous
+        # hand-maintained list had gone stale and silently withheld
+        # REQUIRE_BLOCK_POW / MIN_POW_BITS (among others) from the daemon,
+        # which then fell back to its own defaults — so a fabric's
+        # difficulty FLOOR was never applied on FreeBSD.
+        set -a
         . "${shard_listener_config}"
+        set +a
     fi
-    export MULTICAST_IF LISTEN_PORT SHARD_BITS MC_SCOPE MC_GROUP_ID
-    export SHARD_INCLUDE SUBTREE_INCLUDE SUBTREE_EXCLUDE
-    export EGRESS_ADDR EGRESS_PROTO STRIP_HEADER
-    export RETRY_ENDPOINTS NACK_JITTER_MAX NACK_BACKOFF_MAX NACK_MAX_RETRIES NACK_GAP_TTL
-    export NUM_WORKERS METRICS_ADDR OTLP_ENDPOINT OTLP_INTERVAL
-    export DRAIN_TIMEOUT INSTANCE_ID DEBUG
 
     # Receive-side: no multicast route needed (MLD group joins handle reception).
 }
