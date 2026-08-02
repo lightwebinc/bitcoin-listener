@@ -128,6 +128,12 @@ egress_dedup_prefix: "bsl:egr:"  # key prefix (per-deployment namespace)
 egress_dedup_ttl_redis: "60s"     # tier-2 entry TTL
 egress_dedup_local_cap: 1048576   # tier-1 LRU capacity; 0 = disable egress dedup
 
+# In-process duplicate suppressor keyed on (groupIdx, subtreeID, SeqNum) —
+# independent of the cross-listener TxID gate above. Sizing: workers × tps ×
+# egress_dedup_ttl.
+egress_dedup_cap: 0               # 0 = disabled
+egress_dedup_ttl: "2s"            # max age of a remembered tuple
+
 # Courtesy ingress mark: SETNX into the proxy's ingress namespace so the proxy
 # knows a TxID is already on the network. Leave the backend none (and
 # ingress_set_redis_addr empty) to disable. prefix MUST match proxy's
