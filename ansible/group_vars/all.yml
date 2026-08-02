@@ -8,14 +8,15 @@
 # shard-listener source and build
 # ------------------------------------------------------------
 listener_repo: "https://github.com/lightwebinc/shard-listener.git"
-listener_version: "main"
+# Pin to a release tag; "main" floats and makes a rebuild non-reproducible.
+listener_version: "v1.19.0"
 listener_install_dir: "/opt/shard-listener"
 listener_bin_dir: "/usr/local/bin"
 listener_user: "shard-listener"
 listener_group: "shard-listener"
 
 # Go toolchain version (used when building from source)
-go_version: "1.25.11"
+go_version: "1.25.12"
 go_install_dir: "/usr/local/go"
 
 # ------------------------------------------------------------
