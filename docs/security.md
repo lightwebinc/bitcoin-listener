@@ -91,7 +91,8 @@ pfctl -a shard-listener -sr
 - A consumer that pivots through the `egress_addr` target host — downstream
   topology protection is out of scope here; use network segmentation
   upstream.
-- Multicast flooding: in the default `asm` source mode the listener
+- Multicast flooding: in this repo's `asm` default source mode (a legacy
+  default — the fleet/chart default is `ssm`) the listener
   accepts all UDP on `LISTEN_PORT` from any multicast source on the
   fabric iface. shard-listener's `-source-mode ssm` (MLDv2 source-include
   joins) restricts reception to discovered/bootstrap sources — see

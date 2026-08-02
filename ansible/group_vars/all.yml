@@ -56,7 +56,7 @@ subtree_exclude: ""             # Comma-separated hex subtree IDs to drop (V2 on
 # Egress (downstream unicast forward)
 egress_addr: "127.0.0.1:9100"   # host:port of downstream consumer
 egress_proto: "udp"             # udp | tcp
-strip_header: false             # Send payload-only datagrams to egress
+strip_header: false             # false = forward whole frames (header retained); binary/chart default is true (payload-only)
 
 # NACK (NORM-inspired gap recovery)
 retry_endpoints: ""             # Comma-separated host:port retry nodes

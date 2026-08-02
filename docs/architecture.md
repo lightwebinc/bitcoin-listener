@@ -36,7 +36,7 @@ beacon discovery are documented in the service and project repos:
 - [shard-listener — Architecture](https://github.com/lightwebinc/shard-listener/blob/main/docs/architecture.md)
 - [shard-listener — Configuration](https://github.com/lightwebinc/shard-listener/blob/main/docs/configuration.md)
 - [bsv-multicast — DESIGN.md](https://github.com/lightwebinc/bsv-multicast/blob/main/DESIGN.md)
-- BRC drafts: `bsv-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135,139,142}-*.md`
+- BRC specifications: `bsv-multicast/docs/brc-{124,126,127,128,129,130,131,132,133,134,135,139,142,143,144,148,149}-*.md`
 
 ## Data plane
 
