@@ -9,7 +9,7 @@
 # ------------------------------------------------------------
 listener_repo: "https://github.com/lightwebinc/shard-listener.git"
 # Pin to a release tag; "main" floats and makes a rebuild non-reproducible.
-listener_version: "v1.19.0"
+listener_version: "v1.20.0"
 listener_install_dir: "/opt/shard-listener"
 listener_bin_dir: "/usr/local/bin"
 listener_user: "shard-listener"
