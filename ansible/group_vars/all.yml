@@ -54,6 +54,28 @@ shard_include: ""               # Comma-separated shard indices, e.g. "0,1" (emp
 subtree_include: ""             # Comma-separated hex subtree IDs to allow (V2 only)
 subtree_exclude: ""             # Comma-separated hex subtree IDs to drop (V2 only)
 
+# BRC-148/149 BEEF object plane. A listener joins NO BEEF group unless one of
+# the two selectors below is set — the safe default, because the plane is a
+# separate address band and joining it on every listener multiplies fabric
+# traffic. Enabling is a per-fabric choice; there are three modes:
+#
+#   1. off (default)  — both empty. The listener ignores the BEEF plane.
+#   2. topic election  — beef_topics: names or 64-hex TopicIDs. Derives BOTH
+#      the plane joins and a topic filter, so the listener receives only the
+#      topics it elected. Use when the edge knows which overlays it serves.
+#   3. aggregator      — beef_groups: plane-RELATIVE group indices (0 ..
+#      2^beef_shard_bits-1). Joins the band with NO topic restriction. This is
+#      the mode for a broker-less OSS edge: it needs no topic catalog, because
+#      it elects by group index rather than by overlay name.
+#
+# beef_shard_bits MUST match the ingress proxies (it sizes the band); a
+# mismatch splits the plane and objects land in groups nobody joined.
+beef_topics: ""                 # mode 2: comma-separated topic names / 64-hex TopicIDs
+beef_groups: ""                 # mode 3: comma-separated plane-relative indices, e.g. "0,1,2,3"
+beef_shard_bits: 0              # 0 = single-group plane; MUST match the proxies
+beef_versions: ""               # optional object-version filter (empty = accept all)
+beef_verify_content: false      # recompute ContentID (SHA-256d) on reassembly and drop on mismatch
+
 # Egress (downstream unicast forward)
 egress_addr: "127.0.0.1:9100"   # host:port of downstream consumer
 egress_proto: "udp"             # udp | tcp
