@@ -89,7 +89,16 @@ nack_max_retries: 8             # Budget for 3 beacon + 3 static-seed entries wi
 nack_gap_ttl: "10m"
 
 # Runtime / observability
-num_workers: 0                  # 0 = runtime.NumCPU()
+# MUST be 1 for any listener that JOINS multicast (collapsed/receiver mode).
+# Linux delivers a multicast datagram to EVERY SO_REUSEPORT socket bound to the
+# port — it does not load-balance them — so N workers receive N copies of every
+# frame and forward N copies downstream. Measured on a 2-core node: 1000 frames
+# in, 1000 received on worker 0 AND 1000 on worker 1. Egress dedup does not
+# save you (egress_dedup_cap defaults to 0 = disabled), and 0 = NumCPU makes
+# the duplication factor silently track the node's core count.
+# The Helm chart hardcodes 1 for the same reason. Raise this ONLY for
+# listener_mode: delivery, which ingests unicast and joins no group.
+num_workers: 1
 metrics_addr: ":9200"           # Listener metrics (not :9100 — avoids collision with proxy)
 otlp_endpoint: ""               # OTLP gRPC push; empty disables
 otlp_interval: "30s"            # OTLP metric export cadence
