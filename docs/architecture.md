@@ -104,5 +104,5 @@ the socket in the first place.
 | Firewall role                                 | n/a                       | Built-in `firewall` Ansible role  |
 
 Shared patterns: Go toolchain install, systemd unit hardening, netplan-based
-interface config on Ubuntu, rc.d on FreeBSD, BGP via BIRD2 or FRR,
+interface config on Ubuntu/Debian, rc.d on FreeBSD, BGP via BIRD2 or FRR,
 management-plane helpers (`bsp-*` / `bsl-*`).

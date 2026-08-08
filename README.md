@@ -23,6 +23,7 @@ BGP integration (BIRD2 / FRR) for listener reachability.
 | OS           | Automation | Service Manager |
 | ------------ | ---------- | --------------- |
 | Ubuntu 24.04 | Ansible    | systemd         |
+| Debian 13    | Ansible    | systemd         |
 | FreeBSD 14   | Ansible    | rc.d            |
 | AWS EC2      | Terraform  | systemd         |
 | Any SSH host | Terraform  | generic         |
@@ -45,7 +46,7 @@ ansible-playbook -i inventory/hosts.yml site.yml
 - [BGP](docs/bgp.md)
 - [Networking](docs/networking.md)
 - [Terraform](docs/terraform.md)
-- OS notes: [Ubuntu 24.04](docs/os/ubuntu-24.04.md), [FreeBSD 14](docs/os/freebsd-14.md)
+- OS notes: [Ubuntu 24.04](docs/os/ubuntu-24.04.md), [Debian 13](docs/os/debian-13.md), [FreeBSD 14](docs/os/freebsd-14.md)
 
 ## Repository Layout
 

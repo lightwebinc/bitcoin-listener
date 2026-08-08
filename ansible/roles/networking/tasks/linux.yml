@@ -25,6 +25,21 @@
     # of the SSM Support Plan; no-op in ASM mode.
     - { name: net.ipv6.mld_max_msf, value: "{{ networking_mld_max_msf | default('1024') }}" }
 
+# Ubuntu preinstalls netplan; Debian does not. The role owns its presence so
+# the netplan templates below (and `netplan apply`) work on both.
+- name: Install netplan (Debian family)
+  ansible.builtin.apt:
+    name: netplan.io
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Enable systemd-networkd (netplan renderer backend)
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    enabled: true
+    state: started
+  when: ansible_os_family == 'Debian'
+
 - name: Deploy netplan config for ethernet ingress
   ansible.builtin.template:
     src: netplan-ethernet.yaml.j2
