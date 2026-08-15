@@ -62,7 +62,12 @@
 
 - name: Build shard-listener binary
   ansible.builtin.command:
-    cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -ldflags \"-s -w -X github.com/lightwebinc/shard-listener/metrics.Version={{ listener_version }}\" -o {{ listener_install_dir }}/shard-listener ."
+    # Folded scalar: the one-line form ran past the 160-char lint limit. Folding
+    # joins these lines with single spaces, so the command string is unchanged.
+    cmd: >-
+      {{ go_install_dir }}/bin/go build -buildvcs=false
+      -ldflags "-s -w -X github.com/lightwebinc/shard-listener/metrics.Version={{ listener_version }}"
+      -o {{ listener_install_dir }}/shard-listener .
     chdir: "{{ listener_install_dir }}"
   environment:
     PATH: "{{ go_install_dir }}/bin:{{ ansible_env.PATH }}"
