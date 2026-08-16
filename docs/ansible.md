@@ -58,7 +58,7 @@ See `ansible/group_vars/all.yml` for the full list. Quick reference:
 | `egress_addr`              | `127.0.0.1:9100` | Downstream consumer                                    |
 | `egress_proto`             | `udp`            | Or `tcp`                                               |
 | `retry_endpoints`          | `""`             | `"host:port,host:port"`                                |
-| `num_workers`              | `0` (= NumCPU)   | **Set `1` per-host** for multicast receive (see note)  |
+| `num_workers`              | `1`              | Already `1` in `group_vars/all.yml`; raise only for `listener_mode: delivery` (see note) |
 | `metrics_addr`             | `:9200`          |                                                        |
 | `otlp_endpoint`            | `""`             |                                                        |
 | `otlp_interval`            | `30s`            |                                                        |
@@ -83,7 +83,7 @@ Because `group_vars/all.yml` has higher precedence than inventory group vars,
 the following must be set on each host (not in group vars):
 
 - `ingress_iface`
-- `num_workers` — **must be `1` for multicast receive** (see note below)
+- `num_workers` — leave at the default `1` for multicast receive (see note below)
 - `mgmt_cidrs_v4`, `mgmt_cidrs_v6` — firewall allow-list; `group_vars/all.yml` defaults to empty lists
 - `ansible_host`, `ansible_user`, `ansible_ssh_private_key_file`
 - `bgp_router_id`, `bgp_peer_ip`, `bgp_peer_ip6` (when `enable_bgp` is true)
@@ -91,8 +91,9 @@ the following must be set on each host (not in group vars):
 > **`num_workers` and multicast:** Linux delivers multicast datagrams to every
 > socket in a SO_REUSEPORT group — it does not load-balance them. Running
 > `num_workers > 1` causes each frame to be processed and forwarded N times,
-> doubling (or more) all metrics and egress traffic. Always set `num_workers: 1`
-> as a **host-level** variable to override the `group_vars/all.yml` default of 0.
+> doubling (or more) all metrics and egress traffic. `group_vars/all.yml` already
+> defaults to `1`; raise it only on a host running `listener_mode: delivery`,
+> where ingest is unicast and SO_REUSEPORT does load-balance.
 
 ## Common operations
 
@@ -126,7 +127,8 @@ for the variable reference.
   role marks `listener_install_dir` as `safe.directory` before cloning.
 - Remember: `group_vars/all.yml` beats inventory-group vars. Always set
   `ingress_iface`, `num_workers`, and `mgmt_cidrs_*` on the host, not on the group.
-- The binary build task runs on every playbook invocation (`changed_when: true`
-  with no `creates:` guard) to ensure the installed binary always reflects the
-  checked-out source. The `copy` step that follows only triggers a service
-  restart when the binary actually changes.
+- The binary build is **stat-guarded**: it is skipped when
+  `{{ listener_install_dir }}/shard-listener` already exists, so a re-run does
+  not rebuild. Force a rebuild with `listener_force_build: true`. The `copy`
+  step that follows only triggers a service restart when the binary actually
+  changes.

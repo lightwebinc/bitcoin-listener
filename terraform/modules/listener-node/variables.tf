@@ -241,8 +241,8 @@ variable "nack_max_retries" {
 variable "num_workers" {
   # Linux delivers multicast datagrams to EVERY socket in a SO_REUSEPORT group
   # (no load-balancing), so num_workers > 1 forwards each frame N times. Keep 1
-  # for multicast receive; the Ansible group_vars default of 0 (= NumCPU) is
-  # only safe for unicast ingest.
+  # for multicast receive; the Ansible group_vars default is 1 to match. Values
+  # above 1 are only safe for listener_mode: delivery (unicast ingest).
   description = "Listener worker count (keep 1 — SO_REUSEPORT duplicates every multicast frame per worker)"
   type        = number
   default     = 1

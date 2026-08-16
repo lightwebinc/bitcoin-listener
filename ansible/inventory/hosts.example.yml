@@ -12,15 +12,11 @@ all:
         enable_firewall: true
         enable_bgp: false
 
-        # Firewall allow-list for SSH / metrics scrape.
-        # MUST be set to your management network(s).
-        mgmt_cidrs_v4:
-          - "10.0.0.0/8"
-        mgmt_cidrs_v6: []
-
-        # NOTE: ingress_iface must be set per-host (not here) to override the
-        # group_vars/all.yml default. Ansible gives group_vars/all higher
-        # precedence than inventory group vars.
+        # NOTE: ingress_iface and mgmt_cidrs_v4/v6 must be set per-host (not
+        # here) to override the group_vars/all.yml defaults. Ansible gives
+        # group_vars/all higher precedence than inventory group vars, so
+        # values placed here are silently ignored — for mgmt_cidrs_* that
+        # renders an empty allow-list behind a policy-drop firewall.
 
       hosts:
         listener-01:
@@ -28,6 +24,11 @@ all:
           ansible_user: ubuntu
           ansible_ssh_private_key_file: ~/.ssh/id_ed25519
           ingress_iface: eth0
+          # Firewall allow-list for SSH / metrics scrape.
+          # MUST be set to your management network(s).
+          mgmt_cidrs_v4:
+            - "10.0.0.0/8"
+          mgmt_cidrs_v6: []
           egress_addr: "10.0.1.100:9100"
           retry_endpoints: "10.0.2.10:9300,10.0.2.11:9300"
           bgp_router_id: 203.0.113.50
@@ -39,6 +40,9 @@ all:
           ansible_ssh_private_key_file: ~/.ssh/id_ed25519
           # FreeBSD interface naming
           ingress_iface: vtnet0
+          mgmt_cidrs_v4:
+            - "10.0.0.0/8"
+          mgmt_cidrs_v6: []
           egress_addr: "10.0.1.101:9100"
           retry_endpoints: "10.0.2.10:9300,10.0.2.11:9300"
           bgp_router_id: 198.51.100.60
